@@ -1,0 +1,17 @@
+import os
+from dataclasses import dataclass
+
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(".env")
+except Exception as e:
+    print(e)
+
+
+@dataclass
+class Config:
+    ENVIRONMENT = os.getenv("ENVIRONMENT")
+    ACCESS_KEY_ID = os.getenv("ACC_K_ID")
+    SECRET_ACCESS_KEY = os.getenv("ASC_KY")
+    DATA_DUMP_BUCKET = os.getenv("DATA_DUMP_BUCKET")
