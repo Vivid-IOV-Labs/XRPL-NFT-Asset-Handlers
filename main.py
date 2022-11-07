@@ -43,11 +43,7 @@ def process_image(img_url: str):
     new_height = 200
     new_width = int(aspect_ratio * new_height)
     new_image = img.resize((new_width, new_height))
-    img_byte_arr = BytesIO()
-    new_image_byte_arr = BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    new_image.save(new_image_byte_arr, format='PNG')
-    return img_byte_arr, new_image_byte_arr
+    return img, new_image
 
 
 if __name__ == "__main__":
@@ -59,9 +55,8 @@ if __name__ == "__main__":
     image_url = meta_data["image"]
     full, resized = process_image(image_url)
     writer = S3FileWriter()
-    writer.write(f"assets/images/{issuer}/{nft_token_id}/200px/{nft_token_id}.jpg", resized)
-    writer.write(f"assets/images/{issuer}/{nft_token_id}/full/{nft_token_id}.jpg", full)
-    # print(f"Token URI: {token_uri}")
-    # print(f"Token ID: {nft_token_id}")
-    # print(f"MetaData: {meta_data}")
+    writer.write_image(f"assets/images/{issuer}/{nft_token_id}/200px/{nft_token_id}.jpg", resized)
+    writer.write_image(f"assets/images/{issuer}/{nft_token_id}/full/{nft_token_id}.jpg", full)
+    writer.write_json(f"assets/metadata/{issuer}/{nft_token_id}/metadata.json", meta_data)
+
 

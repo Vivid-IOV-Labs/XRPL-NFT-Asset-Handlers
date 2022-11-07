@@ -1,5 +1,7 @@
 import boto3
 from config import Config
+from io import BytesIO
+import json
 
 
 class LocalFileWriter:
@@ -21,6 +23,17 @@ class S3FileWriter:
         )
         return s3
 
-    def write(self, path, buffer):
+    def _write(self, path, buffer):
         s3 = self._get_s3_resource()
         s3.Object(self.bucket, path).put(Body=buffer.getvalue())
+
+    def write_image(self, path, image):
+        buffer = BytesIO()
+        image.save(buffer, format='PNG')
+        self._write(path, buffer)
+
+    def write_json(self, path, obj):
+        to_bytes = json.dumps(obj, indent=4).encode('utf-8')
+        buffer = BytesIO()
+        buffer.write(to_bytes)
+        self._write(path, buffer)
