@@ -1,39 +1,45 @@
-import boto3
+import aioboto3
 from config import Config
 from io import BytesIO
 import json
+import logging
+
+logger = logging.getLogger("app_log")
 
 
 class LocalFileWriter:
     pass
 
 
-class S3FileWriter:
-
+class AsyncS3FileWriter:
     def __init__(self):
         self.bucket = Config.DATA_DUMP_BUCKET
         self.access_key_id = Config.ACCESS_KEY_ID
         self.secret_access_key = Config.SECRET_ACCESS_KEY
 
-    def _get_s3_resource(self):
-        s3 = boto3.resource(
-            "s3",
+    async def _write(self, path, buffer):
+        logger.info(f"Uploading File to {path}")
+        session = aioboto3.Session(
             aws_access_key_id=self.access_key_id,
-            aws_secret_access_key=self.secret_access_key
+            aws_secret_access_key=self.secret_access_key,
         )
-        return s3
+        buffer.seek(0)
+        async with session.client("s3") as s3:
+            await s3.upload_fileobj(buffer, self.bucket, path)
+        logger.info(f"File Uploaded to {path}")
 
-    def _write(self, path, buffer):
-        s3 = self._get_s3_resource()
-        s3.Object(self.bucket, path).put(Body=buffer.getvalue())
-
-    def write_image(self, path, image):
+    async def write_image(self, path, image):
         buffer = BytesIO()
         image.save(buffer, format='PNG')
-        self._write(path, buffer)
+        await self._write(path, buffer)
 
-    def write_json(self, path, obj):
+    async def write_json(self, path, obj):
         to_bytes = json.dumps(obj, indent=4).encode('utf-8')
         buffer = BytesIO()
         buffer.write(to_bytes)
-        self._write(path, buffer)
+        await self._write(path, buffer)
+
+    async def write_animation(self, path, content):
+        buffer = BytesIO()
+        buffer.write(content)
+        await self._write(path, buffer)

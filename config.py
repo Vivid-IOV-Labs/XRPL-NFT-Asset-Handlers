@@ -15,3 +15,9 @@ class Config:
     ACCESS_KEY_ID = os.getenv("ACC_K_ID")
     SECRET_ACCESS_KEY = os.getenv("ASC_KY")
     DATA_DUMP_BUCKET = os.getenv("DATA_DUMP_BUCKET")
+    IPFS_HOSTS = [
+        "https://nftstorage.link/ipfs",
+        "https://gateway.pinata.cloud/ipfs",
+        "https://cloudflare-ipfs.com/ipfs",
+        "https://dweb.link/ipfs"
+    ]
