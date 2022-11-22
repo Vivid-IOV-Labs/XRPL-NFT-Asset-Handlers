@@ -5,8 +5,8 @@ from dataclasses import dataclass
 try:
     from dotenv import load_dotenv
     load_dotenv(".env")
-except Exception as e:
-    print(e)
+except ModuleNotFoundError:
+    pass
 
 
 @dataclass

@@ -4,7 +4,7 @@ import logging
 
 from writers import AsyncS3FileWriter
 from fetcher import Fetcher
-from image import process_image
+from image_processor import process_image
 from utils import get_file_extension
 from extractors import TokenIDExtractor, TokenURIExtractor
 

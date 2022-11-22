@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import json
 from engine import Engine
 
 logger = logging.getLogger("app_log")
@@ -13,7 +12,6 @@ logger.setLevel(logging.INFO)
 
 
 def nft_data_handler(event, context):
-    payload = json.loads(context)
-    engine = Engine(payload)
+    engine = Engine(event)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(engine.run())
