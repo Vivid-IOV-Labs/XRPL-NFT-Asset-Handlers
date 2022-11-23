@@ -39,7 +39,7 @@ class AsyncS3FileWriter:
         buffer.write(to_bytes)
         await self._write(path, buffer)
 
-    async def write_animation(self, path, content):
+    async def write_media(self, path, content):
         buffer = BytesIO()
         buffer.write(content)
         await self._write(path, buffer)

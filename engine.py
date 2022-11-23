@@ -19,10 +19,10 @@ class Engine:
         self.token_id_extractor = TokenIDExtractor(data)
         self.token_uri_extractor = TokenURIExtractor(data)
 
-    async def _dump_image(self, content: bytes, token_id: str):
+    async def _dump_image(self, content: bytes, ext: str, token_id: str):
         full, resized = process_image(content)
-        await self.writer.write_image(f"assets/images/{token_id}/200px/image.jpg", resized)
-        await self.writer.write_image(f"assets/images/{token_id}/full/image.jpg", full)
+        await self.writer.write_image(f"assets/images/{token_id}/200px/image.{ext}", resized)
+        await self.writer.write_image(f"assets/images/{token_id}/full/image.{ext}", full)
 
     async def run(self):
         logger.info(f"Running for object with id -> {self.data['_id']['$oid']}")
@@ -34,27 +34,32 @@ class Engine:
         if token_uri is None:
             logger.info(f"No Token URI Found For Object With ID: {self.data['_id']['$oid']}")
             return
-        meta_data = await self.fetcher.fetch(token_uri)
-        if meta_data:
-            try:
-                meta_data = json.loads(meta_data)
-            except UnicodeDecodeError:
+        content, content_type = await self.fetcher.fetch(token_uri)
+        if content:
+            meta_data = {}
+            ext = content_type.split("/")[1]
+            file_type = content_type.split("/")[0]
+            if file_type == "application":
+                meta_data = json.loads(content)
+                await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
+            elif file_type == "image":
                 logger.info("Processing possible image metadata")
-                await self._dump_image(meta_data, token_id)
+                await self._dump_image(content, ext, token_id)
                 return
+            else:
+                logger.info(f"Got FileType {file_type} For Metadata")
+                await self.writer.write_media(f"assets/{file_type}/{token_id}/{file_type}.{ext}", content)
             image_url = meta_data.get("image", meta_data.get("image_url"))
             video_url = meta_data.get("video", meta_data.get("video_url"))
             file_url = meta_data.get("file", meta_data.get("file_url"))
             animation_url = meta_data.get("animation", meta_data.get("animation_url"))
             audio_url = meta_data.get("audio", meta_data.get("audio_url"))
             thumbnail_url = meta_data.get("thumbnail", meta_data.get("thumbnail_url"))
-            await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
             if image_url:
-                image_content = await self.fetcher.fetch(image_url)
+                image_content, content_type = await self.fetcher.fetch(image_url)
                 if image_content is not None:
-                    full, resized = process_image(image_content)
-                    await self.writer.write_image(f"assets/images/{token_id}/200px/image.jpg", resized)
-                    await self.writer.write_image(f"assets/images/{token_id}/full/image.jpg", full)
+                    extension = content_type.split("/")[1]
+                    await self._dump_image(image_content, extension, token_id)
             if video_url:
                 logger.info(f"Found Video URL: {video_url}")
             if file_url:
@@ -64,11 +69,11 @@ class Engine:
             if thumbnail_url:
                 logger.info(f"Found Thumbnail URL: {thumbnail_url}")
             if animation_url:
-                animation_content = await self.fetcher.fetch(animation_url)
+                animation_content, content_type = await self.fetcher.fetch(animation_url)
                 if animation_content:
-                    animation_file_ext = get_file_extension(animation_url)
-                    await self.writer.write_animation(
-                        f"assets/animations/{token_id}/animation.{animation_file_ext}",
+                    file_ext = content_type.split("/")[1]
+                    await self.writer.write_media(
+                        f"assets/animations/{token_id}/animation.{file_ext}",
                         animation_content
                     )
 
