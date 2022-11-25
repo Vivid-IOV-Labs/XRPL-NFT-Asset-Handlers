@@ -12,7 +12,7 @@ class TokenIDExtractor:
 
     @property
     def affected_nodes(self):
-        return self.data["metaData"]["AffectedNodes"]
+        return self.data["meta"]["AffectedNodes"]
 
     def _get_token_page_modified_nodes(self) -> List[Dict]:
         modified_nodes = [node for node in self.affected_nodes if node.get("ModifiedNode", False)]
@@ -46,7 +46,7 @@ class TokenIDExtractor:
         return modified_nodes_tokens + created_nodes_tokens
 
     def extract(self) -> Optional[str]:
-        if self.data["metaData"]["TransactionResult"] != "tesSUCCESS":
+        if self.data["meta"]["TransactionResult"] != "tesSUCCESS":
             return None
         try:
             nft_tokens = self._get_all_nft_tokens()

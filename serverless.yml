@@ -36,7 +36,7 @@ functions:
   nft-data-processor:
     handler: handlers.nft_data_handler
     name: nft-processor-${sls:stage}
-    timeout: 180
+    timeout: 900
 
 plugins:
   - serverless-python-requirements

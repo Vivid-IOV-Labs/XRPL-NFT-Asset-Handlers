@@ -12,6 +12,7 @@ logger.setLevel(logging.INFO)
 
 
 def nft_data_handler(event, context):
-    engine = Engine(event)
+    data = event["result"]
+    engine = Engine(data)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(engine.run())

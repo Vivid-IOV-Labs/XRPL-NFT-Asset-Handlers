@@ -1,18 +1,16 @@
-from typing import Dict
 import json
 import logging
 
 from writers import AsyncS3FileWriter
 from fetcher import Fetcher
 from image_processor import process_image
-from utils import get_file_extension
 from extractors import TokenIDExtractor, TokenURIExtractor
 
 logger = logging.getLogger("app_log")
 
 
 class Engine:
-    def __init__(self, data: Dict):
+    def __init__(self, data):
         self.data = data
         self.writer = AsyncS3FileWriter()
         self.fetcher = Fetcher()
@@ -25,14 +23,14 @@ class Engine:
         await self.writer.write_image(f"assets/images/{token_id}/full/image.{ext}", full)
 
     async def run(self):
-        logger.info(f"Running for object with id -> {self.data['_id']['$oid']}")
+        logger.info(f"Running for transaction with hash -> {self.data['hash']}")
         token_id = self.token_id_extractor.extract()
         if token_id is None:
-            logger.info(f"No Token ID Found For Object With ID: {self.data['_id']['$oid']}")
+            logger.info(f"No Token ID For Transaction with hash: {self.data['hash']}")
             return
         token_uri = self.token_uri_extractor.extract()
         if token_uri is None:
-            logger.info(f"No Token URI Found For Object With ID: {self.data['_id']['$oid']}")
+            logger.info(f"No Token URI Found For Object With ID: {self.data['ledger_index']}")
             return
         content, content_type = await self.fetcher.fetch(token_uri)
         if content:
@@ -77,6 +75,6 @@ class Engine:
                         animation_content
                     )
 
-            logger.info(f"Completed dump for object with id -> {self.data['_id']['$oid']}\n")
+            logger.info(f"Completed dump for transaction with hash -> {self.data['hash']}\n")
         else:
             logger.info(f"Could Not Fetch Metadata for {token_uri}")
