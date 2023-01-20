@@ -17,10 +17,9 @@ logger.addHandler(file_handler)
 
 
 async def run_test():
-    test_data = json.load(open("data/nftokenmintschemas.json", "r"))  # noqa
-    for data in test_data:
-        engine = Engine(data)
-        await engine.run()
+    test_data = json.load(open("data/test-data.json", "r"))  # noqa
+    engine = Engine(test_data['result'])
+    await engine.run()
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
