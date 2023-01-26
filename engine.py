@@ -58,7 +58,13 @@ class Engine:
                 if image_content is not None:
                     await self._dump_image(image_content, token_id, content_type)
             if video_url:
-                logger.info(f"Found Video URL: {video_url}")
+                video_content, content_type = await self.fetcher.fetch(video_url)
+                if video_content:
+                    await self.writer.write_media(
+                        f"assets/videos/{token_id}/video",
+                        video_content,
+                        content_type
+                    )
             if file_url:
                 logger.info(f"Found File URL: {file_url}")
             if audio_url:
