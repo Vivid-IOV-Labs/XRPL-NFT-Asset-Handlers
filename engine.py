@@ -17,10 +17,10 @@ class Engine:
         self.token_id_extractor = TokenIDExtractor(data)
         self.token_uri_extractor = TokenURIExtractor(data)
 
-    async def _dump_image(self, content: bytes, token_id: str):
+    async def _dump_image(self, content: bytes, token_id: str, content_type):
         full, resized = process_image(content)
-        await self.writer.write_image(f"assets/images/{token_id}/200px/image", resized)
-        await self.writer.write_image(f"assets/images/{token_id}/full/image", full)
+        await self.writer.write_image(f"assets/images /{token_id}/200px/image", resized, "image/png")
+        await self.writer.write_image(f"assets/images/{token_id}/full/image", full, content_type)
 
     async def run(self):
         logger.info(f"Running for transaction with hash -> {self.data['hash']}")
@@ -42,7 +42,7 @@ class Engine:
                 await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
             elif file_type == "image":
                 logger.info("Processing possible image metadata")
-                await self._dump_image(content, token_id)
+                await self._dump_image(content, token_id, content_type)
                 return
             else:
                 logger.info(f"Got FileType {file_type} For Metadata")
@@ -56,7 +56,7 @@ class Engine:
             if image_url:
                 image_content, content_type = await self.fetcher.fetch(image_url)
                 if image_content is not None:
-                    await self._dump_image(image_content, token_id)
+                    await self._dump_image(image_content, token_id, content_type)
             if video_url:
                 logger.info(f"Found Video URL: {video_url}")
             if file_url:

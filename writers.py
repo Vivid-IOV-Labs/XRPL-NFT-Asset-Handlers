@@ -35,10 +35,11 @@ class AsyncS3FileWriter:
             )
         logger.info(f"File Uploaded to {path}")
 
-    async def write_image(self, path, image):
+    async def write_image(self, path, image, content_type):
         buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        await self._write(path, buffer, 'image/png')
+        fmt = content_type.split("/")[-1]
+        image.save(buffer, format=fmt.upper())
+        await self._write(path, buffer, content_type)
 
     async def write_json(self, path, obj):
         to_bytes = json.dumps(obj, indent=4).encode('utf-8')
