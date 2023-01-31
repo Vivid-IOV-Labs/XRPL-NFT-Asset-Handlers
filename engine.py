@@ -19,7 +19,7 @@ class Engine:
 
     async def _dump_image(self, content: bytes, token_id: str, content_type):
         full, resized = process_image(content)
-        await self.writer.write_image(f"assets/images /{token_id}/200px/image", resized, "image/png")
+        await self.writer.write_image(f"assets/images/{token_id}/200px/image", resized, "image/png")
         await self.writer.write_image(f"assets/images/{token_id}/full/image", full, content_type)
 
     async def run(self):

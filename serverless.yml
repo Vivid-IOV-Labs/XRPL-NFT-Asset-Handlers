@@ -37,6 +37,12 @@ functions:
     handler: handlers.nft_data_handler
     name: nft-processor-${sls:stage}
     timeout: 900
+  fetch-assets:
+    handler: handlers.fetch_asset_handler
+    events:
+      - httpApi:
+          path: /{issuer}/{asset}
+          method: get
 
 plugins:
   - serverless-python-requirements
