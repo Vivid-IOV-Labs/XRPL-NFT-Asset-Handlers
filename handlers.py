@@ -68,3 +68,10 @@ def fetch_asset_handler(event, context):
             print(e, key)
             continue
     return {"statusCode": 400}
+
+
+def retry(event, context):
+    engine = Engine({"URI": ""})
+    path = event["Records"][0]["s3"]["object"]["key"]
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(engine.retry(path))

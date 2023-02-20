@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
 import logging
-from utils import hex_to_text, is_ipfs, is_normal_url
+from utils import hex_to_text, is_ipfs, is_normal_url, fetch_account_info
+
 
 
 logger = logging.getLogger("app_log")
@@ -72,12 +73,42 @@ class TokenURIExtractor:
         self.data = data
 
     def extract(self):
-        try:
-            token_uri_hex = self.data["URI"]
-            token_uri = hex_to_text(token_uri_hex)
-            if is_ipfs(token_uri) is not True and is_normal_url(token_uri) is not True:
-                return f"ipfs://{token_uri}"
-            return token_uri
-        except KeyError:
-            logger.error("URI Field not present in data")
-            return None
+        token_uri_hex = self.data["URI"]
+        token_uri = hex_to_text(token_uri_hex)
+        if is_ipfs(token_uri) is not True and is_normal_url(token_uri) is not True:
+            return f"ipfs://{token_uri}"
+        return token_uri
+
+
+class DomainURIExtractor:
+    @staticmethod
+    def extract(data, token_id):
+        domain = None
+        if "Domain" in data:
+            domain = data["Domain"]
+        else:
+            account_data = fetch_account_info(data["Issuer"])
+            print(account_data)
+            domain = hex_to_text(account_data["Domain"])
+
+        if domain == "https://default-example.com":
+            return f"{domain}/.well-known/xrpl-nft/{token_id}"
+        elif domain == "https://marketplace-api.onxrp.com/api/metadata/":
+            return f"{domain}{token_id}.json"
+        elif is_ipfs(domain):
+            return f"{domain}{token_id}.json"
+        else:
+            logger.info(f"Unrecognized Domain --> {domain}")
+            raise ValueError
+
+        # token_uri_hex = self.data.get("URI")
+        # if not token_uri_hex:
+        #     if
+        #     account_data = fetch_account_info(self.data["Issuer"])
+        #     # __import__("ipdb").set_trace()
+        #     # token_uri_hex
+        # try:
+        #
+        # except KeyError:
+        #     logger.error("URI Field not present in data")
+        #     return None

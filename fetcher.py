@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import aiohttp
 import asyncio
 from config import Config
-from utils import is_ipfs, get_path_from_ipfs_url
+from utils import is_ipfs, get_path_from_ipfs_url, is_normal_url
 import logging
 
 logger = logging.getLogger("app_log")
@@ -21,6 +21,8 @@ class Fetcher:
                     content_type = response.headers["Content-Type"]
                     return content, content_type
                 logger.error(f"Fetch Failed for {url}")
+                # content = await response.content.read()
+                # print(content)
                 await asyncio.sleep(3)
                 return None, None
 
@@ -29,7 +31,10 @@ class Fetcher:
         return response
 
     async def fetch(self, url: str) -> Tuple[Optional[bytes], Optional[str]]:
-        if is_ipfs(url):
+        if is_normal_url(url):
+            response = await self._fetch(url)
+            return response
+        else:
             ipfs_path = get_path_from_ipfs_url(url)
             done, _ = await asyncio.wait(
                 [
@@ -42,6 +47,4 @@ class Fetcher:
                 if task.result() is not None:
                     result = task.result()
             return result
-        else:
-            response = await self._fetch(url)
-            return response
+

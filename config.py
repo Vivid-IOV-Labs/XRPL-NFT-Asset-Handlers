@@ -16,6 +16,7 @@ class Config:
     SECRET_ACCESS_KEY = os.getenv("ASC_KY")
     DATA_DUMP_BUCKET = os.getenv("DATA_DUMP_BUCKET")
     NFT_MINT_DUMP_BUCKET = os.getenv("NFT_MINT_DUMP_BUCKET")
+    CACHE_FAILED_LOG_BUCKET = os.getenv("CACHE_FAILED_LOG_BUCKET")
     IPFS_HOSTS = [
         "https://nftstorage.link/ipfs",
         "https://gateway.pinata.cloud/ipfs",

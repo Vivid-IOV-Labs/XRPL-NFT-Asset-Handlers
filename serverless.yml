@@ -37,13 +37,57 @@ functions:
     handler: handlers.nft_data_handler
     name: nft-processor-${sls:stage}
     timeout: 900
+  asset-extraction-retry:
+    handler: handlers.retry
+#    events:
+#      - eventBridge:
+#          pattern:
+#            source:
+#              - aws.s3
+#            detail-type:
+#              - Object Created
+#            detail:
+#              bucket:
+#                name:
+#                  - peerkat-metadata-cache-failed-logger
+#              object:
+#                key:
+#                  - prefix: 'notfound'
   fetch-assets:
     handler: handlers.fetch_asset_handler
     events:
       - httpApi:
           path: /{issuer}/{asset}
           method: get
+#
+#stepFunctions:
+#  stateMachines:
+#    AssetExtractionRetry:
+#      name: AssetExtractionRetry${sls:stage}
+#      definition:
+#        StartAt: Retry
+#        States:
+#          Retry:
+#            Type: Task
+#            Resource:
+#              Fn::GetAtt: [ asset-extraction-retry, Arn ]
+#            End: true
+#      events:
+#        - eventBridge:
+#            event:
+#              source:
+#                - aws.s3
+#              detail-type:
+#                - Object Created
+#              detail:
+#                bucket:
+#                  name:
+#                    - peerkat-metadata-cache-failed-logger
+#                object:
+#                  key:
+#                    - prefix: 'notfound/'
 
 plugins:
   - serverless-python-requirements
   - serverless-dotenv-plugin
+  - serverless-step-functions

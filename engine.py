@@ -1,10 +1,13 @@
 import json
 import logging
+import traceback
 
-from writers import AsyncS3FileWriter
+from writers import AsyncS3FileWriter, Config
+from utils import delete_from_s3, read_json
 from fetcher import Fetcher
 from image_processor import process_image
-from extractors import TokenIDExtractor, TokenURIExtractor
+from extractors import TokenIDExtractor, TokenURIExtractor, DomainURIExtractor
+from exceptions import NoMetaDataException
 
 logger = logging.getLogger("app_log")
 
@@ -22,13 +25,7 @@ class Engine:
         await self.writer.write_image(f"assets/images/{token_id}/200px/image", resized, "image/png")
         await self.writer.write_image(f"assets/images/{token_id}/full/image", full, content_type)
 
-    async def run(self):
-        logger.info(f"Running for transaction with hash -> {self.data['hash']}")
-        token_id = self.token_id_extractor.extract()
-        if token_id is None:
-            logger.info(f"No Token ID For Transaction with hash: {self.data['hash']}")
-            return
-        token_uri = self.token_uri_extractor.extract()
+    async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
             logger.info(f"No Token URI Found For Object With ID: {self.data['ledger_index']}")
             return
@@ -80,6 +77,45 @@ class Engine:
                         content_type
                     )
 
-            logger.info(f"Completed dump for transaction with hash -> {self.data['hash']}\n")
+            logger.info(f"Completed dump for Token ID -> {token_id}\n")
         else:
-            logger.info(f"Could Not Fetch Metadata for {token_uri}")
+            raise NoMetaDataException(f"Could Not Fetch Metadata for {token_uri}")
+
+    async def run(self):
+        logger.info(f"Running for transaction with hash -> {self.data['hash']}")
+        token_id = self.token_id_extractor.extract()
+        if token_id is None:
+            logger.info(f"No Token ID For Transaction with hash: {self.data['hash']}")
+            return
+        token_uri = None
+        if "URI" not in self.data:
+            token_uri = DomainURIExtractor.extract(self.data, token_id)
+        else:
+            token_uri = self.token_uri_extractor.extract()
+        await self._extract_assets(token_id, token_uri)
+
+    async def retry(self, path):
+        data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config)
+        if type(data) != dict:
+            data = json.loads(data)
+        self.token_uri_extractor.data = data
+        token_id = data.get("NFTokenID", "none")
+        try:
+            if "URI" not in data:
+                token_uri = DomainURIExtractor.extract(data, token_id)
+            else:
+                token_uri = self.token_uri_extractor.extract()
+            await self._extract_assets(token_id, token_uri)
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
+            await self.writer.write_json(f"done/{token_id}.json", {"URI": self.data["URI"], "NFTokenID": token_id})
+        except Exception as e: # noqa
+            logger.error(traceback.format_exc())
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
+            await self.writer.write_json(
+                f"error/{token_id}.json",
+                {"URI": self.data.get("URI"), "NFTokenID": token_id, "error": traceback.format_exc(), **data}
+            )
+
+

@@ -18,7 +18,7 @@ class AsyncS3FileWriter:
         self.secret_access_key = Config.SECRET_ACCESS_KEY
 
     async def _write(self, path, buffer, content_type):
-        logger.info(f"Uploading File to {path} with content Type {content_type}")
+        logger.info(f"Uploading File to {self.bucket}/{path} with content Type {content_type}")
         session = aioboto3.Session(
             aws_access_key_id=self.access_key_id,
             aws_secret_access_key=self.secret_access_key,
@@ -33,7 +33,7 @@ class AsyncS3FileWriter:
                     "ContentType": content_type
                 }
             )
-        logger.info(f"File Uploaded to {path}")
+        logger.info(f"File Uploaded to {self.bucket}/{path}")
 
     async def write_image(self, path, image, content_type):
         buffer = BytesIO()
