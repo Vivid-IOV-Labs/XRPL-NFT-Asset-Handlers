@@ -22,8 +22,11 @@ class Engine:
 
     async def _dump_image(self, content: bytes, token_id: str, content_type):
         full, resized = process_image(content)
+        ext = content_type.split("/")[1]
         await self.writer.write_image(f"assets/images/{token_id}/200px/image", resized, "image/png")
+        await self.writer.write_image(f"assets/images/{token_id}/200px/image.png", resized, "image/png")
         await self.writer.write_image(f"assets/images/{token_id}/full/image", full, content_type)
+        await self.writer.write_image(f"assets/images/{token_id}/full/image.{ext}", full, content_type)
 
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
@@ -36,8 +39,14 @@ class Engine:
             file_type = content_type.split("/")[0]
             if file_type == "application":
                 meta_data = json.loads(content)
+                await self.writer.write_json(f"assets/metadata/{token_id}/metadata", meta_data)
                 await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
             elif file_type == "image":
+                meta_data = {
+                    "image": token_uri
+                }
+                await self.writer.write_json(f"assets/metadata/{token_id}/metadata", meta_data)
+                await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
                 logger.info("Processing possible image metadata")
                 await self._dump_image(content, token_id, content_type)
                 return
@@ -54,11 +63,17 @@ class Engine:
                 image_content, content_type = await self.fetcher.fetch(image_url)
                 if image_content is not None:
                     await self._dump_image(image_content, token_id, content_type)
-            if video_url:
+            if video_url:  # noqa
                 video_content, content_type = await self.fetcher.fetch(video_url)
+                ext = content_type.split("/")[1]
                 if video_content:
                     await self.writer.write_media(
                         f"assets/videos/{token_id}/video",
+                        video_content,
+                        content_type
+                    )
+                    await self.writer.write_media(
+                        f"assets/videos/{token_id}/video.{ext}",
                         video_content,
                         content_type
                     )
@@ -68,11 +83,17 @@ class Engine:
                 logger.info(f"Found Audio URL: {audio_url}")
             if thumbnail_url:
                 logger.info(f"Found Thumbnail URL: {thumbnail_url}")
-            if animation_url:
+            if animation_url:  # noqa
                 animation_content, content_type = await self.fetcher.fetch(animation_url)
+                ext = content_type.split("/")[1]
                 if animation_content:
                     await self.writer.write_media(
                         f"assets/animations/{token_id}/animation",
+                        animation_content,
+                        content_type
+                    )
+                    await self.writer.write_media(
+                        f"assets/animations/{token_id}/animation.{ext}",
                         animation_content,
                         content_type
                     )
@@ -96,6 +117,7 @@ class Engine:
 
     async def retry(self, path):
         data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config)
+        print(data)
         if type(data) != dict:
             data = json.loads(data)
         self.token_uri_extractor.data = data

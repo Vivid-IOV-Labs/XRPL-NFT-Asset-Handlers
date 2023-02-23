@@ -39,20 +39,21 @@ functions:
     timeout: 900
   asset-extraction-retry:
     handler: handlers.retry
-#    events:
-#      - eventBridge:
-#          pattern:
-#            source:
-#              - aws.s3
-#            detail-type:
-#              - Object Created
-#            detail:
-#              bucket:
-#                name:
-#                  - peerkat-metadata-cache-failed-logger
-#              object:
-#                key:
-#                  - prefix: 'notfound'
+    timeout: 900
+    events:
+      - eventBridge:
+          pattern:
+            source:
+              - aws.s3
+            detail-type:
+              - Object Created
+            detail:
+              bucket:
+                name:
+                  - peerkat-metadata-cache-failed-logger
+              object:
+                key:
+                  - prefix: 'notfound/'
   fetch-assets:
     handler: handlers.fetch_asset_handler
     events:

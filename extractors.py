@@ -76,6 +76,8 @@ class TokenURIExtractor:
         token_uri_hex = self.data["URI"]
         token_uri = hex_to_text(token_uri_hex)
         if is_ipfs(token_uri) is not True and is_normal_url(token_uri) is not True:
+            if "cid:" in token_uri:
+                token_uri = token_uri.replace("cid:", "")
             return f"ipfs://{token_uri}"
         return token_uri
 

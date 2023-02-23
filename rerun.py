@@ -26,9 +26,9 @@ async def main():
     failed_objects = fetch_failed_objects(Config)
     # for path in failed_objects[20:30]:
     #     await rerun(path)
-    # await rerun("notfound/000000007EFD66D7DA6C495613C3ABE122007097122045BBFE25BCDE00000043.json")
-    for chunk in chunks(failed_objects[1:], 50):
-        await asyncio.gather(*[rerun(path) for path in chunk])
+    await rerun("error/00080000B47F44FD23F3244735D2243E547C7DB42F657B92D52457F60000035B.json")
+    # for chunk in chunks(failed_objects[1:], 50):
+    #     await asyncio.gather(*[rerun(path) for path in chunk])
 
 
 if __name__ == "__main__":
