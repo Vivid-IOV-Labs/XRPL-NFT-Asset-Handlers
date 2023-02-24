@@ -90,7 +90,6 @@ class DomainURIExtractor:
             domain = data["Domain"]
         else:
             account_data = fetch_account_info(data["Issuer"])
-            print(account_data)
             domain = hex_to_text(account_data["Domain"])
 
         if domain == "https://default-example.com":
@@ -102,15 +101,3 @@ class DomainURIExtractor:
         else:
             logger.info(f"Unrecognized Domain --> {domain}")
             raise ValueError
-
-        # token_uri_hex = self.data.get("URI")
-        # if not token_uri_hex:
-        #     if
-        #     account_data = fetch_account_info(self.data["Issuer"])
-        #     # __import__("ipdb").set_trace()
-        #     # token_uri_hex
-        # try:
-        #
-        # except KeyError:
-        #     logger.error("URI Field not present in data")
-        #     return None

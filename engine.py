@@ -28,6 +28,15 @@ class Engine:
         await self.writer.write_image(f"assets/images/{token_id}/full/image", full, content_type)
         await self.writer.write_image(f"assets/images/{token_id}/full/image.{ext}", full, content_type)
 
+    async def _dump_metadata(self, data, token_id):
+        await self.writer.write_json(f"assets/metadata/{token_id}/metadata", data)
+        await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", data)
+
+    async def _dump_file(self, file_type, token_id, content, content_type, extension):
+        await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}", content, content_type)
+        await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}.{extension}", content, content_type)
+
+
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
             logger.info(f"No Token URI Found For Object With ID: {self.data['ledger_index']}")
@@ -35,24 +44,37 @@ class Engine:
         content, content_type = await self.fetcher.fetch(token_uri)
         if content:
             meta_data = {}
-            # ext = content_type.split("/")[1]
             file_type = content_type.split("/")[0]
             if file_type == "application":
                 meta_data = json.loads(content)
-                await self.writer.write_json(f"assets/metadata/{token_id}/metadata", meta_data)
-                await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
+                content_exists = meta_data.get("content")
+                if content_exists:
+                    content, content_type = await self.fetcher.fetch(content_exists.replace("cid:", ""))
+                    file_type = content_type.split("/")[0]
+                    if file_type == "image":
+                        await self._dump_image(content, token_id, content_type)
+                    else:
+                        ext = content_type.split("/")[1]
+                        await self._dump_file(file_type, token_id, content, content_type, ext)
+                await self._dump_metadata(meta_data, token_id)
             elif file_type == "image":
                 meta_data = {
                     "image": token_uri
                 }
-                await self.writer.write_json(f"assets/metadata/{token_id}/metadata", meta_data)
-                await self.writer.write_json(f"assets/metadata/{token_id}/metadata.json", meta_data)
+                await self._dump_metadata(meta_data, token_id)
                 logger.info("Processing possible image metadata")
                 await self._dump_image(content, token_id, content_type)
                 return
             else:
                 logger.info(f"Got FileType {file_type} For Metadata")
-                await self.writer.write_media(f"assets/{file_type}/{token_id}/{file_type}", content, content_type)
+                meta_data = {
+                    file_type: token_uri
+                }
+                ext = content_type.split("/")[1]
+                await self._dump_metadata(meta_data, token_id)
+                await self._dump_file(file_type, token_id, content, content_type, ext)
+
+            # Search for Other Assets in the MetaData Json and Upload to s3
             image_url = meta_data.get("image", meta_data.get("image_url"))
             video_url = meta_data.get("video", meta_data.get("video_url"))
             file_url = meta_data.get("file", meta_data.get("file_url"))
@@ -67,16 +89,7 @@ class Engine:
                 video_content, content_type = await self.fetcher.fetch(video_url)
                 ext = content_type.split("/")[1]
                 if video_content:
-                    await self.writer.write_media(
-                        f"assets/videos/{token_id}/video",
-                        video_content,
-                        content_type
-                    )
-                    await self.writer.write_media(
-                        f"assets/videos/{token_id}/video.{ext}",
-                        video_content,
-                        content_type
-                    )
+                    await self._dump_file("video", token_id, video_content, content_type, ext)
             if file_url:
                 logger.info(f"Found File URL: {file_url}")
             if audio_url:
@@ -87,17 +100,7 @@ class Engine:
                 animation_content, content_type = await self.fetcher.fetch(animation_url)
                 ext = content_type.split("/")[1]
                 if animation_content:
-                    await self.writer.write_media(
-                        f"assets/animations/{token_id}/animation",
-                        animation_content,
-                        content_type
-                    )
-                    await self.writer.write_media(
-                        f"assets/animations/{token_id}/animation.{ext}",
-                        animation_content,
-                        content_type
-                    )
-
+                    await self._dump_file("animation", token_id, animation_content, content_type, ext)
             logger.info(f"Completed dump for Token ID -> {token_id}\n")
         else:
             raise NoMetaDataException(f"Could Not Fetch Metadata for {token_uri}")
@@ -117,7 +120,6 @@ class Engine:
 
     async def retry(self, path):
         data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config)
-        print(data)
         if type(data) != dict:
             data = json.loads(data)
         self.token_uri_extractor.data = data
