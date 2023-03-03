@@ -45,7 +45,7 @@ class Engine:
         if content:
             meta_data = {}
             file_type = content_type.split("/")[0]
-            if file_type == "application":
+            if file_type == "application" or file_type == "text":
                 meta_data = json.loads(content)
                 content_exists = meta_data.get("content")
                 if content_exists:
@@ -132,7 +132,7 @@ class Engine:
             await self._extract_assets(token_id, token_uri)
             self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
             await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
-            await self.writer.write_json(f"done/{token_id}.json", {"URI": self.data["URI"], "NFTokenID": token_id})
+            await self.writer.write_json(f"done/{token_id}.json", {"URI": token_uri, "NFTokenID": token_id})
         except Exception as e: # noqa
             logger.error(traceback.format_exc())
             self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
