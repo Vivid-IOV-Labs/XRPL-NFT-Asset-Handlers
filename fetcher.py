@@ -21,9 +21,7 @@ class Fetcher:
                     content_type = response.headers["Content-Type"]
                     return content, content_type
                 logger.error(f"Fetch Failed for {url}")
-                # content = await response.content.read()
-                # print(content)
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)
                 return None, None
 
     async def _fetch_from_ipfs(self, ipfs_hash: str, host: str) -> Tuple[Optional[bytes], Optional[str]]:

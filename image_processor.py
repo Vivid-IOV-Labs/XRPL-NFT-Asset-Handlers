@@ -1,5 +1,7 @@
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def process_image(content: bytes):

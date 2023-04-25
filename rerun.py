@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from engine import Engine, Config
-from utils import fetch_failed_objects, chunks
+from utils import chunks, fetch_text_objects, read_json, delete_from_s3
 import logging
 
 # Logging
@@ -21,17 +21,26 @@ async def rerun(path):
     engine = Engine({"URI": ""})
     await engine.retry(path)
 
+async def text_rerun(path):
+    try:
+        path_split = path.split("/")
+        token_id = path_split[2]
+        data = await read_json(Config.DATA_DUMP_BUCKET, path, Config)
+        engine = Engine(data)
+        await engine.retry_text_metadata(data, token_id)
+        await delete_from_s3(Config.DATA_DUMP_BUCKET, path, Config)
+    except json.JSONDecodeError:
+        await delete_from_s3(Config.DATA_DUMP_BUCKET, path, Config)
+    except Exception as e:
+        print(e)
 
-async def main():
-    failed_objects = fetch_failed_objects(Config)
-    # for path in failed_objects[20:30]:
-    #     await rerun(path)
-    await rerun("error/00080000B47F44FD23F3244735D2243E547C7DB42F657B92D52457F60000035B.json")
-    # for chunk in chunks(failed_objects[1:], 50):
-    #     await asyncio.gather(*[rerun(path) for path in chunk])
+async def multiple_texts_reruns():
+    paths = fetch_text_objects(Config)
+    for chunk in chunks(paths, 100):
+        await asyncio.gather(*[text_rerun(path) for path in chunk])
 
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    # await main()
+    # loop.run_until_complete(multiple_texts_reruns())
+    loop.run_until_complete(rerun("error/00083A98425D5408873C7C141C270879D254C84AC1CC10F0A15E6442000003A7.json"))

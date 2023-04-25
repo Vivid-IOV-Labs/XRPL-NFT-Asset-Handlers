@@ -36,6 +36,46 @@ class Engine:
         await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}", content, content_type)
         await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}.{extension}", content, content_type)
 
+    async def retry_text_metadata(self, meta_data, token_id):
+        content_exists = meta_data.get("content")  # noqa
+        if content_exists:
+            content, content_type = await self.fetcher.fetch(content_exists.replace("cid:", ""))
+            file_type = content_type.split("/")[0]
+            if file_type == "image":
+                await self._dump_image(content, token_id, content_type)
+            else:
+                ext = content_type.split("/")[1]
+                await self._dump_file(file_type, token_id, content, content_type, ext)
+        await self._dump_metadata(meta_data, token_id)
+
+        # Search for Other Assets in the MetaData Json and Upload to s3
+        image_url = meta_data.get("image", meta_data.get("image_url"))  # noqa
+        video_url = meta_data.get("video", meta_data.get("video_url"))
+        file_url = meta_data.get("file", meta_data.get("file_url"))
+        animation_url = meta_data.get("animation", meta_data.get("animation_url"))
+        audio_url = meta_data.get("audio", meta_data.get("audio_url"))
+        thumbnail_url = meta_data.get("thumbnail", meta_data.get("thumbnail_url"))
+        if image_url:
+            image_content, content_type = await self.fetcher.fetch(image_url)
+            if image_content is not None:
+                await self._dump_image(image_content, token_id, content_type)
+        if video_url:  # noqa
+            video_content, content_type = await self.fetcher.fetch(video_url)
+            if video_content:
+                ext = content_type.split("/")[1]
+                await self._dump_file("video", token_id, video_content, content_type, ext)
+        if file_url:  # noqa
+            logger.info(f"Found File URL: {file_url}")
+        if audio_url:
+            logger.info(f"Found Audio URL: {audio_url}")
+        if thumbnail_url:
+            logger.info(f"Found Thumbnail URL: {thumbnail_url}")
+        if animation_url:  # noqa
+            animation_content, content_type = await self.fetcher.fetch(animation_url)
+            ext = content_type.split("/")[1]
+            if animation_content:
+                await self._dump_file("animation", token_id, animation_content, content_type, ext)
+
 
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
@@ -118,8 +158,8 @@ class Engine:
             token_uri = self.token_uri_extractor.extract()
         await self._extract_assets(token_id, token_uri)
 
-    async def retry(self, path):
-        data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config)
+    async def retry(self, path=None, data=None):
+        data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config) if path is not None else data
         if type(data) != dict:
             data = json.loads(data)
         self.token_uri_extractor.data = data

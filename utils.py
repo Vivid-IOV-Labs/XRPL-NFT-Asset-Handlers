@@ -59,13 +59,6 @@ def fetch_account_info(address: str):
         ]
     }
     response = requests.post(JSON_RPC_URL, data=json.dumps(payload))
-    # client = JsonRpcClient(JSON_RPC_URL)
-    # info_model = AccountInfo(
-    #     account=address,
-    #     ledger_index="validated",
-    #     strict=True
-    # )
-    # response = client.request(info_model)
     if response.status_code == 200:
         return response.json()["result"]["account_data"]
     return None
@@ -80,10 +73,10 @@ async def delete_from_s3(bucket, key, config):
             Bucket=bucket,
             Key=key
         )
-    logger.info(f"{key} Deleted")
+    logger.info(f"{bucket}/{key} Deleted")
 
 
-async def read_json(bucket, key, config):
+async def read_file(key, config, bucket):
     session = aioboto3.Session(
         aws_access_key_id=config.ACCESS_KEY_ID,
         aws_secret_access_key=config.SECRET_ACCESS_KEY,
@@ -96,7 +89,11 @@ async def read_json(bucket, key, config):
             return None
         body = res["Body"]
         data = await body.read()
-        return json.loads(data)
+        return data
+
+async def read_json(bucket, key, config):
+    data = await read_file(key, config, bucket)
+    return json.loads(data)
 
 def fetch_failed_objects(config):
     s3 = boto3.resource(
@@ -108,4 +105,16 @@ def fetch_failed_objects(config):
     return [
         obj.key
         for obj in bucket.objects.filter(Prefix="notfound/")
+    ]
+
+def fetch_text_objects(config):
+    s3 = boto3.resource(
+        "s3",
+        aws_access_key_id=config.ACCESS_KEY_ID,
+        aws_secret_access_key=config.SECRET_ACCESS_KEY,
+    )
+    bucket = s3.Bucket(config.DATA_DUMP_BUCKET)
+    return [
+        obj.key
+        for obj in bucket.objects.filter(Prefix="assets/text")
     ]
