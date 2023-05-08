@@ -60,6 +60,12 @@ functions:
       - httpApi:
           path: /{issuer}/{asset}
           method: get
+  fetch-assets-content-type:
+    handler: handlers.fetch_asset_content_type_handler
+    events:
+      - httpApi:
+          path: /content-type/{issuer}/{asset}
+          method: get
 
 plugins:
   - serverless-python-requirements

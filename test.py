@@ -2,6 +2,7 @@ import asyncio
 import json
 
 from engine import Engine
+from handlers import fetch_asset_content_type_handler
 import logging
 
 # Logging
@@ -17,16 +18,23 @@ logger.addHandler(file_handler)
 
 
 async def run_test():
-    rerun_data = {
-        "Issuer": "rKiNWUkVsq1rb9sWForfshDSEQDSUncwEu",
-        "NFTokenID": "000803E8CEC1EB1B331D8A55E39D451DE8E13F59CF5509D5B34D5959000002BD",
-        "URI": "68747470733A2F2F6E667473746F726167652E6C696E6B2F697066732F6261666B726569623566616C6166346D70696332656171686D73706135366B63356362666B716A36627568707633656F63326E7A6C656C6B763269",
-        "NFTokenTaxon": 1,
-        "Source": "xummapp-frontend"
+    event = {
+        "pathParameters": {
+            "issuer": "00080000CEB7B6CD3BD5E4CF03F165AC863B570701C1D050E4FA33A50000000A",
+            "asset": "audio"
+        }
     }
-    test_data = json.load(open("data/test-data.json", "r"))  # noqa
-    engine = Engine(rerun_data)
-    await engine.retry(rerun_data)
+    print(fetch_asset_content_type_handler(event, "bola"))
+    # rerun_data = {
+    #     "Issuer": "rKiNWUkVsq1rb9sWForfshDSEQDSUncwEu",
+    #     "NFTokenID": "000803E8CEC1EB1B331D8A55E39D451DE8E13F59CF5509D5B34D5959000002BD",
+    #     "URI": "68747470733A2F2F6E667473746F726167652E6C696E6B2F697066732F6261666B726569623566616C6166346D70696332656171686D73706135366B63356362666B716A36627568707633656F63326E7A6C656C6B763269",
+    #     "NFTokenTaxon": 1,
+    #     "Source": "xummapp-frontend"
+    # }
+    # test_data = json.load(open("data/test-data.json", "r"))  # noqa
+    # engine = Engine(rerun_data)
+    # await engine.retry(rerun_data)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

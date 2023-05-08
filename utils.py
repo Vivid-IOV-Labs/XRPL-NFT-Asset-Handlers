@@ -107,6 +107,18 @@ def fetch_failed_objects(config):
         for obj in bucket.objects.filter(Prefix="notfound/")
     ]
 
+def fetch_s3_folder_contents(config, prefix, bucket):
+    s3 = boto3.resource(
+        "s3",
+        aws_access_key_id=config.ACCESS_KEY_ID,
+        aws_secret_access_key=config.SECRET_ACCESS_KEY,
+    )
+    bucket = s3.Bucket(bucket)
+    return [
+        obj.key
+        for obj in bucket.objects.filter(Prefix=prefix)
+    ]
+
 def fetch_text_objects(config):
     s3 = boto3.resource(
         "s3",
