@@ -66,6 +66,12 @@ functions:
       - httpApi:
           path: /content-type/{issuer}/{asset}
           method: get
+  fetch-image-with-dimension:
+    handler: handlers.fetch_image_with_dimension
+    events:
+      - httpApi:
+          path: /images/{token_id}
+          method: get
 
 plugins:
   - serverless-python-requirements

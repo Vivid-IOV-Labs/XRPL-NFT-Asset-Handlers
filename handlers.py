@@ -113,6 +113,42 @@ def fetch_asset_content_type_handler(event, context):
         # keys.append(f"assets/audio/{issuer}/audio.wav")
     return {"statusCode": 400}
 
+def fetch_image_with_dimension(event, context):
+    from PIL import Image, ImageFile
+    from io import BytesIO
+
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+    session = boto3.Session()
+    s3 = session.client("s3")
+    bucket = Config.DATA_DUMP_BUCKET
+
+    params = event["pathParameters"]
+    token_id = params.get("token_id")
+
+    obj = s3.get_object(Bucket=bucket, Key=f"assets/images/{token_id}/full/image")
+    body = obj['Body']
+    content = body.read()
+
+    req_height = event["queryStringParameters"].get('height')
+    req_width = event["queryStringParameters"].get('width')
+
+    img = Image.open(BytesIO(content))
+    width, height = img.size
+    aspect_ratio = width / height
+
+    if req_height:
+        req_height = int(req_height)
+        req_width = int(req_height * aspect_ratio)
+    elif req_width:
+        req_width = int(req_width)
+        req_height = int(req_width*1/aspect_ratio)
+    else:
+        req_width, req_height = width, height
+    new_image = img.resize((req_width, req_height))
+    output_buffer = BytesIO()
+    new_image.save(output_buffer, format="JPEG")
+    return {"statusCode": 200, "body": output_buffer.getvalue(), "isBase64Encoded": False}
 
 def retry(event, context):
     engine = Engine({"URI": ""})

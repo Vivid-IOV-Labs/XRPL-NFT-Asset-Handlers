@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from engine import Engine
-from handlers import fetch_asset_content_type_handler
+from handlers import fetch_asset_content_type_handler, fetch_image_with_dimension
 import logging
 
 # Logging
@@ -18,13 +18,6 @@ logger.addHandler(file_handler)
 
 
 async def run_test():
-    event = {
-        "pathParameters": {
-            "issuer": "00080000CEB7B6CD3BD5E4CF03F165AC863B570701C1D050E4FA33A50000000A",
-            "asset": "audio"
-        }
-    }
-    print(fetch_asset_content_type_handler(event, "bola"))
     # rerun_data = {
     #     "Issuer": "rKiNWUkVsq1rb9sWForfshDSEQDSUncwEu",
     #     "NFTokenID": "000803E8CEC1EB1B331D8A55E39D451DE8E13F59CF5509D5B34D5959000002BD",
@@ -32,6 +25,22 @@ async def run_test():
     #     "NFTokenTaxon": 1,
     #     "Source": "xummapp-frontend"
     # }
+    event1 = {
+        "pathParameters": {
+            "issuer": "00080000CEB7B6CD3BD5E4CF03F165AC863B570701C1D050E4FA33A50000000A",
+            "asset": "audio"
+        }
+    }
+    event2 = {
+        "pathParameters": {
+            "token_id": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001",
+        },
+        "queryStringParameters": {
+            "height": "500"
+        }
+    }
+    # print(fetch_asset_content_type_handler(event1, "bola"))
+    fetch_image_with_dimension(event2, "bola")
     # test_data = json.load(open("data/test-data.json", "r"))  # noqa
     # engine = Engine(rerun_data)
     # await engine.retry(rerun_data)
