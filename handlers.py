@@ -148,7 +148,7 @@ def fetch_image_with_dimension(event, context):
     new_image = img.resize((req_width, req_height))
     output_buffer = BytesIO()
     new_image.save(output_buffer, format="JPEG")
-    return {"statusCode": 200, "body": output_buffer.getvalue(), "isBase64Encoded": False}
+    return {"statusCode": 200, "body": base64.b64encode(output_buffer.getvalue()), "isBase64Encoded": True}
 
 def retry(event, context):
     engine = Engine({"URI": ""})
