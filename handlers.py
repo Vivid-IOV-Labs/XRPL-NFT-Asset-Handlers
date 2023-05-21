@@ -28,7 +28,7 @@ def fetch_asset_handler(event, context):
     bucket = Config.DATA_DUMP_BUCKET
 
     params = event["pathParameters"]
-    issuer = params.get("token_id")
+    issuer = params.get("issuer")
     asset = params.get("asset")
 
     keys = []
@@ -89,7 +89,7 @@ def fetch_asset_content_type_handler(event, context):
     bucket = Config.DATA_DUMP_BUCKET
 
     params = event["pathParameters"]
-    issuer = params.get("token_id")
+    issuer = params.get("issuer")
     asset = params.get("asset")
 
     if asset == "image":
