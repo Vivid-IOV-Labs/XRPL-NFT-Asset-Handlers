@@ -58,13 +58,13 @@ functions:
     handler: handlers.fetch_asset_handler
     events:
       - httpApi:
-          path: /{issuer}/{asset}
+          path: /{token_id}/{asset}
           method: get
   fetch-assets-content-type:
     handler: handlers.fetch_asset_content_type_handler
     events:
       - httpApi:
-          path: /content-type/{issuer}/{asset}
+          path: /content-type/{token_id}/{asset}
           method: get
   fetch-image-with-dimension:
     handler: handlers.fetch_image_with_dimension
