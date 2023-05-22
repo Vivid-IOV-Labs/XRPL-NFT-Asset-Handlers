@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from engine import Engine
-from handlers import fetch_asset_content_type_handler, fetch_image_with_dimension
+from handlers import fetch_asset_content_type_handler, fetch_image_with_dimension, fetch_asset_handler
 import logging
 
 # Logging
@@ -27,8 +27,8 @@ async def run_test():
     # }
     event1 = {
         "pathParameters": {
-            "issuer": "00080000CEB7B6CD3BD5E4CF03F165AC863B570701C1D050E4FA33A50000000A",
-            "asset": "audio"
+            "issuer": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001",
+            "asset": "image"
         }
     }
     event2 = {
@@ -39,8 +39,10 @@ async def run_test():
             "height": "500"
         }
     }
+    # res = fetch_asset_handler(event1, "hello")
+    # __import__("ipdb").set_trace()
     # print(fetch_asset_content_type_handler(event1, "bola"))
-    fetch_image_with_dimension(event2, "bola")
+    # fetch_image_with_dimension(event2, "bola")
     # test_data = json.load(open("data/test-data.json", "r"))  # noqa
     # engine = Engine(rerun_data)
     # await engine.retry(rerun_data)

@@ -34,12 +34,12 @@ def fetch_asset_handler(event, context):
     keys = []
     content_type = None
     if asset == "image":
-        content_type = {"content_type": "image/jpeg"}
+        content_type = "image/jpeg"
         keys.append(f"assets/images/{issuer}/full/image")
         keys.append(f"assets/images/{issuer}/full/image.jpeg")
 
     if asset == "thumbnail":
-        content_type = {"content_type": "image/jpeg"}
+        content_type = "image/jpeg"
         keys.append(f"assets/images/{issuer}/200px/image")
         keys.append(f"assets/images/{issuer}/200px/image.jpeg")
 
@@ -50,12 +50,12 @@ def fetch_asset_handler(event, context):
         keys.append(f"assets/animations/{issuer}/animation.gif")
 
     if asset == "video":
-        content_type = {"content_type": "video/mp4"}
+        content_type = "video/mp4"
         keys.append(f"assets/video/{issuer}/video")
         keys.append(f"assets/video/{issuer}/video.mp4")
 
     if asset == "metadata":
-        content_type = {"content_type": "application/json"}
+        content_type = "application/json"
         keys.append(f"assets/metadata/{issuer}/metadata")
         keys.append(f"assets/metadata/{issuer}/metadata.json")
 
