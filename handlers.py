@@ -29,8 +29,8 @@ def fetch_asset_handler(event, context):
     bucket = Config.DATA_DUMP_BUCKET
 
     params = event["pathParameters"]
-    req_height = event["queryStringParameters"].get('height')
-    req_width = event["queryStringParameters"].get('width')
+    req_height = event.get("queryStringParameters", {}).get('height')
+    req_width = event.get("queryStringParameters", {}).get('width')
     issuer = params.get("issuer")
     asset = params.get("asset")
 
