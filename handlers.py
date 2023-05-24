@@ -5,6 +5,7 @@ import logging
 from engine import Engine
 from config import Config
 from utils import fetch_s3_folder_contents
+from image_processor import resize_image
 
 logger = logging.getLogger("app_log")
 
@@ -28,6 +29,8 @@ def fetch_asset_handler(event, context):
     bucket = Config.DATA_DUMP_BUCKET
 
     params = event["pathParameters"]
+    req_height = event["queryStringParameters"].get('height')
+    req_width = event["queryStringParameters"].get('width')
     issuer = params.get("issuer")
     asset = params.get("asset")
 
@@ -74,6 +77,16 @@ def fetch_asset_handler(event, context):
                     content_type = key.split("/")[-1].replace("animation.", "")
                 if asset == "audio":
                     content_type = key.split("/")[-1].replace("audio.", "")
+            if asset == "image":
+                if req_height is not None or req_width is not None:
+                    output_buffer = resize_image(content, req_height, req_width)
+                    return {
+                        "headers": { "Content-Type": content_type },
+                        "statusCode": 200,
+                        "body": base64.b64encode(output_buffer.getvalue()),
+                        "isBase64Encoded": True
+                    }
+
             return {
                 "headers": { "Content-Type": content_type },
                 "statusCode": 200,
@@ -128,42 +141,28 @@ def fetch_asset_content_type_handler(event, context):
         # keys.append(f"assets/audio/{issuer}/audio.wav")
     return {"statusCode": 400}
 
-def fetch_image_with_dimension(event, context):
-    from PIL import Image, ImageFile
-    from io import BytesIO
-
-    ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-    session = boto3.Session()
-    s3 = session.client("s3")
-    bucket = Config.DATA_DUMP_BUCKET
-
-    params = event["pathParameters"]
-    token_id = params.get("token_id")
-
-    obj = s3.get_object(Bucket=bucket, Key=f"assets/images/{token_id}/full/image")
-    body = obj['Body']
-    content = body.read()
-
-    req_height = event["queryStringParameters"].get('height')
-    req_width = event["queryStringParameters"].get('width')
-
-    img = Image.open(BytesIO(content))
-    width, height = img.size
-    aspect_ratio = width / height
-
-    if req_height:
-        req_height = int(req_height)
-        req_width = int(req_height * aspect_ratio)
-    elif req_width:
-        req_width = int(req_width)
-        req_height = int(req_width*1/aspect_ratio)
-    else:
-        req_width, req_height = width, height
-    new_image = img.resize((req_width, req_height))
-    output_buffer = BytesIO()
-    new_image.save(output_buffer, format="JPEG")
-    return {"statusCode": 200, "body": base64.b64encode(output_buffer.getvalue()), "isBase64Encoded": True}
+# def fetch_image_with_dimension(event, context):
+#     from PIL import Image, ImageFile
+#     from io import BytesIO
+#
+#     ImageFile.LOAD_TRUNCATED_IMAGES = True
+#
+#     session = boto3.Session()
+#     s3 = session.client("s3")
+#     bucket = Config.DATA_DUMP_BUCKET
+#
+#     params = event["pathParameters"]
+#     token_id = params.get("token_id")
+#
+#     obj = s3.get_object(Bucket=bucket, Key=f"assets/images/{token_id}/full/image")
+#     body = obj['Body']
+#     content = body.read()
+#
+#     req_height = event["queryStringParameters"].get('height')
+#     req_width = event["queryStringParameters"].get('width')
+#
+#     output_buffer = resize_image(content, req_height, req_width)
+#     return {"statusCode": 200, "body": base64.b64encode(output_buffer.getvalue()), "isBase64Encoded": True}
 
 def retry(event, context):
     engine = Engine({"URI": ""})
