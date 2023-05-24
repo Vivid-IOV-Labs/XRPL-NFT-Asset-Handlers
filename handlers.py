@@ -31,7 +31,7 @@ def fetch_asset_handler(event, context):
     params = event["pathParameters"]
     req_height = event.get("queryStringParameters", {}).get('height')
     req_width = event.get("queryStringParameters", {}).get('width')
-    issuer = params.get("issuer")
+    issuer = params.get("token_id")
     asset = params.get("asset")
 
     keys = []
