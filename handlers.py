@@ -98,72 +98,7 @@ def fetch_asset_handler(event, context):
             raise e
             # continue
     return {"statusCode": 400}
-#
-# def fetch_asset_content_type_handler(event, context):
-#     bucket = Config.DATA_DUMP_BUCKET
-#
-#     params = event["pathParameters"]
-#     issuer = params.get("issuer")
-#     asset = params.get("asset")
-#
-#     if asset == "image":
-#         return {"content_type": "image/jpeg"}
-#         # keys.append(f"assets/images/{issuer}/full/image")
-#         # keys.append(f"assets/images/{issuer}/full/image.jpeg")
-#
-#     if asset == "thumbnail":
-#         return {"content_type": "image/jpeg"}
-#         # keys.append(f"assets/images/{issuer}/200px/image")
-#         # keys.append(f"assets/images/{issuer}/200px/image.jpeg")
-#
-#     if asset == "animation":
-#         contents = fetch_s3_folder_contents(Config, f"assets/animations/{issuer}/", bucket)
-#         return {"content_type": contents[-1].split("/")[-1].replace("animation.", "")}
-#         # keys.append(f"assets/animations/{issuer}/animation")
-#         # keys.append(f"assets/animations/{issuer}/animation.mp4")
-#         # keys.append(f"assets/animations/{issuer}/animation.png")
-#         # keys.append(f"assets/animations/{issuer}/animation.gif")
-#
-#     if asset == "video":
-#         return {"content_type": "video/mp4"}
-#         # keys.append(f"assets/video/{issuer}/video")
-#         # keys.append(f"assets/video/{issuer}/video.mp4")
-#
-#     if asset == "metadata":
-#         return {"content_type": "application/json"}
-#         # keys.append(f"assets/metadata/{issuer}/metadata")
-#         # keys.append(f"assets/metadata/{issuer}/metadata.json")
-#
-#     if asset == "audio":
-#         contents = fetch_s3_folder_contents(Config, f"assets/audios/{issuer}/", bucket)
-#         return {"content_type": contents[-1].split("/")[-1].replace("audio.", "")}
-#         # keys.append(f"assets/audio/{issuer}/audio")
-#         # keys.append(f"assets/audio/{issuer}/audio.mpeg")
-#         # keys.append(f"assets/audio/{issuer}/audio.wav")
-#     return {"statusCode": 400}
 
-# def fetch_image_with_dimension(event, context):
-#     from PIL import Image, ImageFile
-#     from io import BytesIO
-#
-#     ImageFile.LOAD_TRUNCATED_IMAGES = True
-#
-#     session = boto3.Session()
-#     s3 = session.client("s3")
-#     bucket = Config.DATA_DUMP_BUCKET
-#
-#     params = event["pathParameters"]
-#     token_id = params.get("token_id")
-#
-#     obj = s3.get_object(Bucket=bucket, Key=f"assets/images/{token_id}/full/image")
-#     body = obj['Body']
-#     content = body.read()
-#
-#     req_height = event["queryStringParameters"].get('height')
-#     req_width = event["queryStringParameters"].get('width')
-#
-#     output_buffer = resize_image(content, req_height, req_width)
-#     return {"statusCode": 200, "body": base64.b64encode(output_buffer.getvalue()), "isBase64Encoded": True}
 
 def retry(event, context):
     engine = Engine({"URI": ""})
