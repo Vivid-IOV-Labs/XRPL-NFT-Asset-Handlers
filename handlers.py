@@ -95,7 +95,8 @@ def fetch_asset_handler(event, context):
             }
         except Exception as e:
             print(e, key)
-            continue
+            raise e
+            # continue
     return {"statusCode": 400}
 #
 # def fetch_asset_content_type_handler(event, context):
