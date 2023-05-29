@@ -58,7 +58,7 @@ functions:
     handler: handlers.fetch_asset_handler
     events:
       - httpApi:
-          path: /{token_id}/{asset}
+          path: /{asset}/{token_id}
           method: get
 
 plugins:
