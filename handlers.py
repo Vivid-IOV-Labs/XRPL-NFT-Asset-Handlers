@@ -29,8 +29,12 @@ def fetch_asset_handler(event, context):
     bucket = Config.DATA_DUMP_BUCKET
 
     params = event["pathParameters"]
-    req_height = event.get("queryStringParameters", {}).get('height')
-    req_width = event.get("queryStringParameters", {}).get('width')
+    query_params = event.get("queryStringParameters")
+    req_height = None
+    req_width = None
+    if query_params is not None:
+        req_height = query_params.get("height")
+        req_width = query_params.get("width")
     issuer = params.get("token_id")
     asset = params.get("asset")
 
