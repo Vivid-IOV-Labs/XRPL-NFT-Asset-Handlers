@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from engine import Engine
-from handlers import fetch_asset_content_type_handler, fetch_image_with_dimension, fetch_asset_handler
+from asset_fetcher import AssetFetcher
 import logging
 
 # Logging
@@ -27,18 +27,20 @@ async def run_test():
     # }
     event1 = {
         "pathParameters": {
-            "issuer": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001",
-            "asset": "image"
-        }
-    }
-    event2 = {
-        "pathParameters": {
-            "token_id": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001",
+            "token_id": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001"
         },
         "queryStringParameters": {
-            "height": "500"
+            "height": "200"
         }
     }
+    # event2 = {
+    #     "pathParameters": {
+    #         "token_id": "0000000006573034BE857B870D6ABEFC24721C29AACBEB8B16E5DA9E00000001",
+    #     },
+    #     "queryStringParameters": {
+    #         "height": "500"
+    #     }
+    # }
     # res = fetch_asset_handler(event1, "hello")
     # __import__("ipdb").set_trace()
     # print(fetch_asset_content_type_handler(event1, "bola"))
@@ -46,6 +48,9 @@ async def run_test():
     # test_data = json.load(open("data/test-data.json", "r"))  # noqa
     # engine = Engine(rerun_data)
     # await engine.retry(rerun_data)
+    fetcher = AssetFetcher(event1)
+    result = fetcher.fetch("image")
+    print(result)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
