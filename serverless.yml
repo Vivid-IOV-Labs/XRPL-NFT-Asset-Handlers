@@ -54,11 +54,41 @@ functions:
               object:
                 key:
                   - prefix: 'notfound/'
-  fetch-assets:
-    handler: handlers.fetch_asset_handler
+  fetch-metadata:
+    handler: handlers.fetch_metadata_handler
     events:
       - httpApi:
-          path: /{asset}/{token_id}
+          path: /assets/metadata/{token_id}
+          method: get
+  fetch-image:
+    handler: handlers.fetch_images_handler
+    events:
+      - httpApi:
+          path: /assets/images/{token_id}
+          method: get
+  fetch-thumbnail:
+    handler: handlers.fetch_thumbnail_handler
+    events:
+      - httpApi:
+          path: /assets/thumbnails/{token_id}
+          method: get
+  fetch-video:
+    handler: handlers.fetch_video_handler
+    events:
+      - httpApi:
+          path: /assets/videos/{token_id}
+          method: get
+  fetch-animation:
+    handler: handlers.fetch_animation_handler
+    events:
+      - httpApi:
+          path: /assets/animations/{token_id}
+          method: get
+  fetch-audio:
+    handler: handlers.fetch_audio_handler
+    events:
+      - httpApi:
+          path: /assets/audios/{token_id}
           method: get
 
 plugins:

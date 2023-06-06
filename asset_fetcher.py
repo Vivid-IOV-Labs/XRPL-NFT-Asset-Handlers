@@ -68,14 +68,22 @@ class AssetFetcher:
                     if req_height is not None or req_width is not None:
                         output_buffer = resize_image(content, req_height, req_width)
                         return {
-                            "headers": {"Content-Type": content_type},
+                            "headers": {
+                                "Content-Type": content_type,
+                                "Access-Control-Allow-Origin" : "*",
+                                "Access-Control-Allow-Credentials" : True
+                            },
                             "statusCode": 200,
                             "body": base64.b64encode(output_buffer.getvalue()),
                             "isBase64Encoded": True
                         }
 
                 return {
-                    "headers": {"Content-Type": content_type},
+                    "headers": {
+                        "Content-Type": content_type,
+                        "Access-Control-Allow-Origin" : "*",
+                        "Access-Control-Allow-Credentials" : True
+                    },
                     "statusCode": 200,
                     "body": base64.b64encode(content),
                     "isBase64Encoded": True
