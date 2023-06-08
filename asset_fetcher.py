@@ -71,7 +71,8 @@ class AssetFetcher:
                             "headers": {
                                 "Content-Type": content_type,
                                 "Access-Control-Allow-Origin" : "*",
-                                "Access-Control-Allow-Credentials" : True
+                                "Access-Control-Allow-Credentials" : True,
+                                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
                             },
                             "statusCode": 200,
                             "body": base64.b64encode(output_buffer.getvalue()),
@@ -82,7 +83,8 @@ class AssetFetcher:
                     "headers": {
                         "Content-Type": content_type,
                         "Access-Control-Allow-Origin" : "*",
-                        "Access-Control-Allow-Credentials" : True
+                        "Access-Control-Allow-Credentials" : True,
+                        "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
                     },
                     "statusCode": 200,
                     "body": base64.b64encode(content),
