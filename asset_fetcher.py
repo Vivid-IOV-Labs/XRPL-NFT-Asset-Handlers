@@ -119,6 +119,7 @@ class AssetFetcher:
         else:
             offset = (page_num - 1) * 10
             query = f"SELECT nft_token_id FROM project_tracker WHERE issuer = '{issuer}' AND taxon = {taxon} LIMIT 10 OFFSET {offset}"
+        count_query = f"SELECT COUNT(nft_token_id) FROM project_tracker WHERE issuer = '{issuer}' AND taxon = {taxon}"
 
         connection = psycopg2.connect(
             user=Config.RDS_USER,
@@ -131,8 +132,10 @@ class AssetFetcher:
 
         cursor.execute(query)
         token_ids = cursor.fetchall()
+        cursor.execute(count_query)
+        total_ids = cursor.fetchall()[0][0]
         keys = [(token_id[0], f"assets/metadata/{token_id[0]}/metadata") for token_id in token_ids]
-        results = []
+        metadatas = []
 
         for (token_id, key) in keys:
             try:
@@ -140,9 +143,14 @@ class AssetFetcher:
                 body = obj['Body']
                 content = body.read()
                 to_dict = json.loads(content)
-                results.append({"token_id": token_id, "metadata": to_dict})
+                metadatas.append({"token_id": token_id, "metadata": to_dict})
             except Exception as e:
                 print(f"Error Fetching Metadata for TokenID: {token_id}\n{e}")
+        results = {
+            "data": metadatas,
+            "count": total_ids,
+            "current_page": page_num
+        }
         return {
             "headers": {
                 "Content-Type": "application/json",
@@ -151,6 +159,6 @@ class AssetFetcher:
                 "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
             },
             "statusCode": 200,
-            "body": results,
-            "isBase64Encoded": False
+            "body": base64.b64encode(bytes(json.dumps(results), "utf-8")),
+            "isBase64Encoded": True
         }

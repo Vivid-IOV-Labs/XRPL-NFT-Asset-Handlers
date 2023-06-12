@@ -11,10 +11,18 @@ provider:
   region: eu-west-2
   iam:
     role: arn:aws:iam::366877760811:role/lambda-role-peerkat-nft-data-serverless
-  runtime: python3.8
+  runtime: python3.9
   layers:
-    - arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p38-Pillow:5
+    - arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p39-pillow:1
   architecture: x86_64
+#  name: aws
+#  region: eu-west-2
+#  iam:
+#    role: arn:aws:iam::366877760811:role/lambda-role-peerkat-nft-data-serverless
+#  runtime: python3.8
+#  layers:
+#    - arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p38-Pillow:5
+#  architecture: x86_64
 
 package:
   patterns:
@@ -59,6 +67,12 @@ functions:
     events:
       - httpApi:
           path: /assets/metadata/{token_id}
+          method: get
+  fetch-project-metadata:
+    handler: handlers.fetch_project_metadata
+    events:
+      - httpApi:
+          path: /taxon-metadata/{issuer}/{taxon}
           method: get
   fetch-image:
     handler: handlers.fetch_images_handler
