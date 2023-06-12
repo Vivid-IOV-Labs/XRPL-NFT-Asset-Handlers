@@ -17,6 +17,11 @@ class Config:
     DATA_DUMP_BUCKET = os.getenv("DATA_DUMP_BUCKET")
     NFT_MINT_DUMP_BUCKET = os.getenv("NFT_MINT_DUMP_BUCKET")
     CACHE_FAILED_LOG_BUCKET = os.getenv("CACHE_FAILED_LOG_BUCKET")
+    DB_HOST = os.getenv("DB_HOST")
+    RDS_PASSWORD = os.getenv("RDS_PASSWORD")
+    RDS_USER = os.getenv("RDS_USER")
+    RDS_PORT = os.getenv("RDS_PORT")
+    DB_NAME = os.getenv("DB_NAME")
     IPFS_HOSTS = [
         "https://nftstorage.link/ipfs",
         "https://gateway.pinata.cloud/ipfs",

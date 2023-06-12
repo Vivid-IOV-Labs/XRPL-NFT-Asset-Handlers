@@ -43,6 +43,9 @@ def fetch_video_handler(event, context):
     fetcher = AssetFetcher(event)
     return fetcher.fetch(asset_type="video")
 
+def fetch_project_metadata(event, context):
+    fetcher = AssetFetcher(event)
+    return fetcher.fetch_project_metadata()
 
 def retry(event, context):
     engine = Engine({"URI": ""})

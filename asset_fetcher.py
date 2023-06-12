@@ -1,7 +1,10 @@
+import json
+
 import boto3
 import base64
 from image_processor import resize_image
 from config import Config
+import psycopg2
 
 class AssetFetcher:
     def __init__(self, event: dict):
@@ -94,3 +97,60 @@ class AssetFetcher:
                 print(e, key)
                 raise e
         return {"statusCode": 400}
+
+    def fetch_project_metadata(self):
+        session = boto3.Session()
+        s3 = session.client("s3")
+        bucket = Config.DATA_DUMP_BUCKET
+
+        params = self.event["pathParameters"]
+        query_params = self.event.get("queryStringParameters")
+
+        issuer = params.get("issuer")
+        taxon = params.get("taxon")
+        page_num = int(query_params.get("page"))
+
+        if int(page_num) <= 0:
+            return {"statusCode": 400, "body": "invalid page number"}
+
+        query = ""
+        if page_num == 1:
+            query = f"SELECT nft_token_id FROM project_tracker WHERE issuer = '{issuer}' AND taxon = {taxon} LIMIT 10"
+        else:
+            offset = (page_num - 1) * 10
+            query = f"SELECT nft_token_id FROM project_tracker WHERE issuer = '{issuer}' AND taxon = {taxon} LIMIT 10 OFFSET {offset}"
+
+        connection = psycopg2.connect(
+            user=Config.RDS_USER,
+            password=Config.RDS_PASSWORD,
+            host=Config.DB_HOST,
+            port=Config.RDS_PORT,
+            database=Config.DB_NAME
+        )
+        cursor = connection.cursor()
+
+        cursor.execute(query)
+        token_ids = cursor.fetchall()
+        keys = [(token_id[0], f"assets/metadata/{token_id[0]}/metadata") for token_id in token_ids]
+        results = []
+
+        for (token_id, key) in keys:
+            try:
+                obj = s3.get_object(Bucket=bucket, Key=key)
+                body = obj['Body']
+                content = body.read()
+                to_dict = json.loads(content)
+                results.append({"token_id": token_id, "metadata": to_dict})
+            except Exception as e:
+                print(f"Error Fetching Metadata for TokenID: {token_id}\n{e}")
+        return {
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": True,
+                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
+            },
+            "statusCode": 200,
+            "body": results,
+            "isBase64Encoded": False
+        }
