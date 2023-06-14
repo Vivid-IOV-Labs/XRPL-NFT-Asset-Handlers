@@ -75,7 +75,8 @@ class AssetFetcher:
                                 "Content-Type": content_type,
                                 "Access-Control-Allow-Origin" : "*",
                                 "Access-Control-Allow-Credentials" : True,
-                                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
+                                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
+                                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
                             },
                             "statusCode": 200,
                             "body": base64.b64encode(output_buffer.getvalue()),
@@ -87,7 +88,8 @@ class AssetFetcher:
                         "Content-Type": content_type,
                         "Access-Control-Allow-Origin" : "*",
                         "Access-Control-Allow-Credentials" : True,
-                        "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
+                        "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
+                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
                     },
                     "statusCode": 200,
                     "body": base64.b64encode(content),
@@ -156,7 +158,8 @@ class AssetFetcher:
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": True,
-                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD"
+                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
             },
             "statusCode": 200,
             "body": base64.b64encode(bytes(json.dumps(results), "utf-8")),
