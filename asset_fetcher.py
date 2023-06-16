@@ -79,7 +79,7 @@ class AssetFetcher:
                                 "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
                             },
                             "statusCode": 200,
-                            "body": base64.b64encode(output_buffer.getvalue()),
+                            "body": base64.b64encode(output_buffer.getvalue()).decode("utf-8"),
                             "isBase64Encoded": True
                         }
 
@@ -92,7 +92,7 @@ class AssetFetcher:
                         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
                     },
                     "statusCode": 200,
-                    "body": base64.b64encode(content),
+                    "body": base64.b64encode(content).decode("utf-8"),
                     "isBase64Encoded": True
                 }
             except Exception as e:
@@ -162,6 +162,6 @@ class AssetFetcher:
                 "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
             },
             "statusCode": 200,
-            "body": base64.b64encode(bytes(json.dumps(results), "utf-8")),
+            "body": base64.b64encode(bytes(json.dumps(results), "utf-8")).decode("utf-8"),
             "isBase64Encoded": True
         }

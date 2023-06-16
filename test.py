@@ -36,8 +36,8 @@ async def run_test():
     }
     metadata_event = {
         "pathParameters": {
-            "issuer": "rKiNWUkVsq1rb9sWForfshDSEQDSUncwEu",
-            "taxon": 1
+            "issuer": "rpbjkoncKiv1LkPWShzZksqYPzKXmUhTW7",
+            "taxon": 52
         },
         "queryStringParameters": {
             "page": "1"
