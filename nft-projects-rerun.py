@@ -22,8 +22,8 @@ async def check_for_metadata():
     completed = {}
     final_result = json.load(open("no-metadata.json", "r"))
     batch = 1
-    for chunk in chunks(data[50000:], 200):
-        if len(final_result) >= 20:
+    for chunk in chunks(data, 200):
+        if len(final_result) >= 10000:
             break
         print(f"Starting Batch {batch}")
         results = await asyncio.gather(*[metadata_check(dat, completed) for dat in chunk])
