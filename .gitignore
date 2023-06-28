@@ -8,3 +8,4 @@ tracked-nfts1.csv
 .DS_Store
 .serverless
 psycopg2
+*.pem
