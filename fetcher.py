@@ -21,6 +21,8 @@ class Fetcher:
                     content_type = response.headers["Content-Type"]
                     return content, content_type
                 logger.error(f"Fetch Failed for {url}")
+                # content = await response.content.read()
+                # __import__("ipdb").set_trace()
                 await asyncio.sleep(5)
                 return None, None
 

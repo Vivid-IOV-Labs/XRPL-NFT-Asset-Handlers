@@ -4,6 +4,7 @@ venv
 .idea/
 __pycache__/
 *.log
+tracked-nfts1.csv
 .DS_Store
 .serverless
 psycopg2

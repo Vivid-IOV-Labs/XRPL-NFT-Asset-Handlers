@@ -1,6 +1,7 @@
 from typing import Optional
 import boto3
 import aioboto3
+import aiohttp
 import logging
 import json
 import requests
@@ -63,6 +64,26 @@ def fetch_account_info(address: str):
         return response.json()["result"]["account_data"]
     return None
 
+async def fetch_account_info_async(address: str):
+    payload = {
+        "method": "account_info",
+        "params": [
+            {
+                "account": address,
+                "strict": True,
+                "ledger_index": "current",
+                "queue": True
+            }
+        ]
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(JSON_RPC_URL, data=json.dumps(payload)) as response:
+            if response.status == 200:
+                content = await response.content.read()
+                data = json.loads(content)["result"]
+                return data["account_data"]
+            return None
+
 async def delete_from_s3(bucket, key, config):
     session = aioboto3.Session(
         aws_access_key_id=config.ACCESS_KEY_ID,
@@ -85,7 +106,7 @@ async def read_file(key, config, bucket):
         try:
             res = await s3.get_object(Bucket=bucket, Key=key)
         except Exception as e:
-            print(e)
+            # print(e)
             return None
         body = res["Body"]
         data = await body.read()

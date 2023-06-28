@@ -46,10 +46,10 @@ async def run_test():
     # test_data = json.load(open("data/test-data.json", "r"))  # noqa
     # engine = Engine(rerun_data)
     # await engine.retry(rerun_data)
-    fetcher = AssetFetcher(metadata_event)
-    result = fetcher.fetch_project_metadata()
-    __import__("ipdb").set_trace()
-    print(result)
+    # fetcher = AssetFetcher(metadata_event)
+    # result = fetcher.fetch_project_metadata()
+    # __import__("ipdb").set_trace()
+    # print(result)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

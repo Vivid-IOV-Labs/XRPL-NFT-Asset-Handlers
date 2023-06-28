@@ -182,4 +182,20 @@ class Engine:
                 {"URI": self.data.get("URI"), "NFTokenID": token_id, "error": traceback.format_exc(), **data}
             )
 
-
+    async def retry_v2(self, token_id, token_uri, issuer, completed, errors):
+        print(f"starting retry for {token_id}")
+        if type(token_uri) == float or token_uri is None:
+            data = {"Issuer": issuer}
+            token_uri = await DomainURIExtractor.async_extract(data, token_id)
+        else:
+            try:
+                token_uri = TokenURIExtractor({"URI": token_uri}).extract()
+            except ValueError:
+                token_uri = token_uri
+        try:
+            await self._extract_assets(token_id, token_uri)
+        except Exception as e:
+            print(e)
+            errors.append({"token_id": token_id, "issuer": issuer, "uri": token_uri, "error": str(e)})
+        completed[token_id] = True
+        print(f"completed retry for {token_id}")
