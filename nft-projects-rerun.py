@@ -18,11 +18,12 @@ async def metadata_check(data, completed):
 
 
 async def check_for_metadata():
-    data = json.load(open("tracked-nfts.json", "r"))
-    completed = {}
+    tracked_nfts = json.load(open("tracked-nfts.json", "r"))
+    completed = json.load(open("completed-reruns.json", "r"))
+    to_check = [data for data in tracked_nfts if completed.get(data["nft_token_id"], False) is False]
     final_result = json.load(open("no-metadata.json", "r"))
     batch = 1
-    for chunk in chunks(data, 200):
+    for chunk in chunks(to_check, 100):
         if len(final_result) >= 10000:
             break
         print(f"Starting Batch {batch}")
