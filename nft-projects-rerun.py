@@ -20,11 +20,11 @@ async def metadata_check(data, completed):
 async def check_for_metadata():
     tracked_nfts = json.load(open("tracked-nfts.json", "r"))
     completed = json.load(open("completed-reruns.json", "r"))
-    to_check = [data for data in tracked_nfts if completed.get(data["nft_token_id"], False) is False]
+    #to_check = [data for data in tracked_nfts if completed.get(data["nft_token_id"], False) is False]
     final_result = json.load(open("no-metadata.json", "r"))
     batch = 1
-    for chunk in chunks(to_check, 100):
-        if len(final_result) >= 10000:
+    for chunk in chunks(tracked_nfts, 100):
+        if len(final_result) >= 50000:
             break
         print(f"Starting Batch {batch}")
         results = await asyncio.gather(*[metadata_check(dat, completed) for dat in chunk])
@@ -66,11 +66,13 @@ if __name__ == "__main__":
     elif stage == "rerun":
         asyncio.run(rerun())
     elif stage == "purge-completed":
+        writer = AsyncS3FileWriter()
         complete = json.load(open("completed-reruns.json", "r"))
         tracked_nfts = json.load(open("tracked-nfts.json", "r"))
 
         new_tracked = [tracked for tracked in tracked_nfts if complete.get(tracked["nft_token_id"], False) is False]
         json.dump(new_tracked, open("tracked-nfts.json", "w"), indent=2)
-        json.dump({}, open("completed-reruns.json", "w"), indent=2)
+        asyncio.run(writer.write_json("rerun/completed.json", complete))
+        #json.dump({}, open("completed-reruns.json", "w"), indent=2)
         json.dump([], open("no-metadata.json", "w"), indent=2)
         print(f"Purged: {len(complete.keys())}\nFormer Tracked Count: {len(tracked_nfts)}\nNew Tracked: {len(new_tracked)}")
