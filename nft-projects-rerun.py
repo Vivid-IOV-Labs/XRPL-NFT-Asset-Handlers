@@ -6,6 +6,8 @@ from utils import chunks, read_json
 from config import Config
 from engine import Engine, AsyncS3FileWriter
 
+writer = AsyncS3FileWriter()
+
 async def metadata_check(data, completed):
     try:
         path = f"assets/metadata/{data['nft_token_id']}/metadata.json"
@@ -35,14 +37,16 @@ async def check_for_metadata():
         batch += 1
 
 
-async def rerun():
-    completed = json.load(open("completed-reruns.json", "r"))
+async def rerun(error=False):
+    completed = json.load(open("completed-error-reruns.json", "r"))
     errors = json.load(open("rerun-errors.json", "r"))
-    no_metadata_objects = json.load(open("no-metadata.json", "r"))
-
-    writer = AsyncS3FileWriter()
-
-    to_rerun = [data for data in no_metadata_objects if completed.get(data["nft_token_id"], False) is False]
+    if error:
+        target = errors
+        errors = []
+        to_rerun = [data for data in target if completed.get(data["token_id"], False) is False]
+    else:
+        target = json.load(open("no-metadata.json", "r"))
+        to_rerun = [data for data in target if completed.get(data["nft_token_id"], False) is False]
 
     batch = 1
     runs_per_batch = 10
@@ -50,8 +54,12 @@ async def rerun():
     print(f"Total IDs: {len(to_rerun)}\nRuns Per Batch: {runs_per_batch}\nTotal Batches: {batch_count}\n")
     for chunk in chunks(to_rerun, runs_per_batch):
         print(f"Started Batch {batch}")
-        await asyncio.gather(*[Engine({}).retry_v2(data["nft_token_id"], data["uri"], data["issuer"], completed, errors) for data in chunk])
-        json.dump(completed, open("completed-reruns.json", "w"), indent=2)
+        if error:
+            await asyncio.gather(*[Engine({}).retry_v2(data["token_id"], data["uri"], data["issuer"], completed, errors) for data in chunk])
+            json.dump(completed, open("completed-error-reruns.json", "w"), indent=2)
+        else:
+            await asyncio.gather(*[Engine({}).retry_v2(data["nft_token_id"], data["uri"], data["issuer"], completed, errors) for data in chunk])
+            json.dump(completed, open("completed-reruns.json", "w"), indent=2)
         json.dump(errors, open("rerun-errors.json", "w"), indent=2)
         await writer.write_json("rerun/rerun_errors.json", errors)
         print(f"Completed Batch {batch} Out of {batch_count} Batches")
@@ -65,14 +73,14 @@ if __name__ == "__main__":
         asyncio.run(check_for_metadata())
     elif stage == "rerun":
         asyncio.run(rerun())
+    elif stage == "rerun-errors":
+        asyncio.run(rerun(error=True))
     elif stage == "purge-completed":
-        writer = AsyncS3FileWriter()
         complete = json.load(open("completed-reruns.json", "r"))
         tracked_nfts = json.load(open("tracked-nfts.json", "r"))
 
         new_tracked = [tracked for tracked in tracked_nfts if complete.get(tracked["nft_token_id"], False) is False]
         json.dump(new_tracked, open("tracked-nfts.json", "w"), indent=2)
         asyncio.run(writer.write_json("rerun/completed.json", complete))
-        #json.dump({}, open("completed-reruns.json", "w"), indent=2)
         json.dump([], open("no-metadata.json", "w"), indent=2)
         print(f"Purged: {len(complete.keys())}\nFormer Tracked Count: {len(tracked_nfts)}\nNew Tracked: {len(new_tracked)}")
