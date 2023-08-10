@@ -50,6 +50,8 @@ async def run_test():
     # result = fetcher.fetch_project_metadata()
     # __import__("ipdb").set_trace()
     # print(result)
+    engine = Engine({"URI": ""})
+    await engine.public_retry("000803E8CEC1EB1B331D8A55E39D451DE8E13F59CF5509D5B34D5959000002BD")
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

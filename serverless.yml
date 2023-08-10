@@ -104,6 +104,12 @@ functions:
       - httpApi:
           path: /assets/audios/{token_id}
           method: get
+  public-retry:
+    handler: handlers.public_retry
+    events:
+      - httpApi:
+          path: /assets/public-retry/{token_id}
+          method: get
 
 plugins:
   - serverless-python-requirements
