@@ -13,16 +13,14 @@ class Fetcher:
     def __init__(self) -> None:
         self.ipfs_hosts = Config.IPFS_HOSTS
 
-    async def _fetch(self, url) -> Tuple[Optional[bytes], Optional[str]]:  # noqa
-        async with aiohttp.ClientSession() as session:
+    async def _fetch(self, url, headers={}) -> Tuple[Optional[bytes], Optional[str]]:  # noqa
+        async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url) as response:
                 if response.status == 200:
                     content = await response.content.read()
                     content_type = response.headers["Content-Type"]
                     return content, content_type
                 logger.error(f"Fetch Failed for {url}")
-                # content = await response.content.read()
-                # __import__("ipdb").set_trace()
                 await asyncio.sleep(5)
                 return None, None
 
@@ -30,9 +28,9 @@ class Fetcher:
         response = await self._fetch(f"{host}/{ipfs_hash}")
         return response
 
-    async def fetch(self, url: str) -> Tuple[Optional[bytes], Optional[str]]:
+    async def fetch(self, url: str, headers={}) -> Tuple[Optional[bytes], Optional[str]]:  # noqa
         if is_normal_url(url):
-            response = await self._fetch(url)
+            response = await self._fetch(url, headers)
             return response
         else:
             ipfs_path = get_path_from_ipfs_url(url)
