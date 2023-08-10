@@ -17,6 +17,7 @@ class Config:
     DATA_DUMP_BUCKET = os.getenv("DATA_DUMP_BUCKET")
     NFT_MINT_DUMP_BUCKET = os.getenv("NFT_MINT_DUMP_BUCKET")
     CACHE_FAILED_LOG_BUCKET = os.getenv("CACHE_FAILED_LOG_BUCKET")
+    BITHOMP_TOKEN = os.getenv("BITHOMP_TOKEN")
     DB_HOST = os.getenv("DB_HOST")
     RDS_PASSWORD = os.getenv("RDS_PASSWORD")
     RDS_USER = os.getenv("RDS_USER")
