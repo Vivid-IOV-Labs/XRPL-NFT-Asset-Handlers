@@ -199,3 +199,22 @@ class Engine:
             errors.append({"token_id": token_id, "issuer": issuer, "uri": token_uri, "error": str(e)})
         completed[token_id] = True
         print(f"completed retry for {token_id}")
+
+    async def public_retry(self, token_id):
+        import json
+        base_url = "https://bithomp.com/api/v2/nft"
+        url = f"{base_url}/{token_id}?uri=true"
+        response, _content_type = await self.fetcher.fetch(url, headers={"x-bithomp-token": Config.BITHOMP_TOKEN})
+        response = json.loads(response)
+        token_uri = response["uri"]
+        self.token_uri_extractor.data = {"URI": token_uri}
+        token_uri = self.token_uri_extractor.extract()
+        try:
+            await self._extract_assets(token_id, token_uri)
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await self.writer.write_json(f"publicapinotfound/done/{token_id}.json", {"URI": token_uri, "NFTokenID": token_id})
+        except Exception as e:  # noqa
+            logger.error(traceback.format_exc())
+            error = {"token_id": token_id, "uri": token_uri, "error": str(e)}
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await self.writer.write_json(f"publicapinotfound/error/{token_id}.json", error)
