@@ -2,7 +2,7 @@ import asyncio
 import argparse
 import json
 
-from engine import Engine, RetryEngine, PublicRetryEngine
+from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine
 from asset_fetcher import AssetFetcher
 import logging
 
@@ -79,8 +79,8 @@ if __name__ == "__main__":
         if stage == "nft-mint":
             path = args.data_path
             data = json.load(open(path, "r"))
-            engine = Engine(data)
-            asyncio.run(engine.run())
+            engine = AssetExtractionEngine(data)
+            engine.run()
 
         elif stage == "retry":
             path = args.data_path

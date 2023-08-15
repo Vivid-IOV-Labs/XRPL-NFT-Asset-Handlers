@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from engine import Engine, RetryEngine, PublicRetryEngine
+from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine
 from asset_fetcher import AssetFetcher
 
 logger = logging.getLogger("app_log")
@@ -14,9 +14,8 @@ logger.setLevel(logging.INFO)
 
 def nft_data_handler(event, context):
     data = event["result"]
-    engine = Engine(data)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(engine.run())
+    engine = AssetExtractionEngine(data)
+    engine.run()
 
 
 def fetch_images_handler(event, context):

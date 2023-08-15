@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from engine import Engine, Config
+from engine import AssetExtractionEngine, Config
 from utils import chunks, fetch_text_objects, read_json, delete_from_s3
 import logging
 
@@ -26,7 +26,7 @@ async def text_rerun(path):
         path_split = path.split("/")
         token_id = path_split[2]
         data = await read_json(Config.DATA_DUMP_BUCKET, path, Config)
-        engine = Engine(data)
+        engine = AssetExtractionEngine(data)
         await engine.retry_text_metadata(data, token_id)
         await delete_from_s3(Config.DATA_DUMP_BUCKET, path, Config)
     except json.JSONDecodeError:
