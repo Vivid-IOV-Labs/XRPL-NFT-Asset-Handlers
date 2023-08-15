@@ -199,6 +199,7 @@ class RetryEngine(BaseAssetExtractionEngine):
         self.path = path
 
     async def _run(self):
+        logger.info(f"Started Retry for Path {self.path}")
         data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, self.path, Config) if self.path is not None else self.data
         if type(data) != dict:
             data = json.loads(data)

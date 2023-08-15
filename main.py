@@ -49,8 +49,13 @@ if __name__ == "__main__":
 
         elif stage == "retry":
             path = args.data_path
-            data = json.load(open(path, "r"))
-            engine = RetryEngine(data=data)
+            engine= RetryEngine(path=path)
+            if "s3" in path:
+                path = path.replace("s3://", "")
+                engine.path = path
+            else:
+                data = json.load(open(path, "r"))
+                engine.data = data
             engine.run()
 
         elif stage == "text-metadata":
