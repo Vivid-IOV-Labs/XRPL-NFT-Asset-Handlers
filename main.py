@@ -2,7 +2,8 @@ import asyncio
 import argparse
 import json
 
-from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine
+from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine, TextMetadataRerunEngine, Config
+from utils import fetch_text_objects
 from asset_fetcher import AssetFetcher
 import logging
 
@@ -86,6 +87,11 @@ if __name__ == "__main__":
             path = args.data_path
             data = json.load(open(path, "r"))
             engine = RetryEngine(data=data)
+            engine.run()
+
+        elif stage == "text-metadata":
+            paths = fetch_text_objects(Config)
+            engine = TextMetadataRerunEngine(paths=paths)
             engine.run()
 
         elif stage == "public-retry":
