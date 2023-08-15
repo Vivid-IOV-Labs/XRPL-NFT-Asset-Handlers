@@ -7,28 +7,31 @@ from abc import ABCMeta, abstractmethod
 
 logger = logging.getLogger("app_log")
 
+class InvalidTxnResultException(Exception):
+    ...
+
 class BaseExtractor(metaclass=ABCMeta):
     @abstractmethod
     def extract(self):
         ...
 
 
-class TokenIDExtractor:
+class TokenIDExtractor(BaseExtractor):
     def __init__(self, data: Dict):
-        self.data = data
+        self._data = data
 
     @property
-    def affected_nodes(self):
-        return self.data["meta"]["AffectedNodes"]
+    def _affected_nodes(self):
+        return self._data["meta"]["AffectedNodes"]
 
     def _get_token_page_modified_nodes(self) -> List[Dict]:
-        modified_nodes = [node for node in self.affected_nodes if node.get("ModifiedNode", False)]
+        modified_nodes = [node for node in self._affected_nodes if node.get("ModifiedNode", False)]
         if modified_nodes:
             return [node for node in modified_nodes if node["ModifiedNode"]["LedgerEntryType"] == "NFTokenPage"]
         return []
 
     def _get_token_page_created_nodes(self) -> List[Dict]:
-        created_nodes = [node for node in self.affected_nodes if node.get("CreatedNode", False)]
+        created_nodes = [node for node in self._affected_nodes if node.get("CreatedNode", False)]
         return [node for node in created_nodes if node["CreatedNode"]["LedgerEntryType"] == "NFTokenPage"]
 
     def _get_nft_tokens_from_modified_nodes(self) -> List[Dict]:
@@ -53,8 +56,8 @@ class TokenIDExtractor:
         return modified_nodes_tokens + created_nodes_tokens
 
     def extract(self) -> Optional[str]:
-        if self.data["meta"]["TransactionResult"] != "tesSUCCESS":
-            return None
+        if self._data["meta"]["TransactionResult"] != "tesSUCCESS":
+            raise InvalidTxnResultException(f"Invalid Transaction Result")
         try:
             nft_tokens = self._get_all_nft_tokens()
             hash_map = {}
@@ -74,7 +77,7 @@ class TokenIDExtractor:
         return None
 
 
-class TokenURIExtractor:
+class TokenURIExtractor(BaseExtractor):
     def __init__(self, data: Dict):
         self.data = data
 
