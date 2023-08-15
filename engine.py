@@ -76,7 +76,6 @@ class Engine:
             if animation_content:
                 await self._dump_file("animation", token_id, animation_content, content_type, ext)
 
-
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
             logger.info(f"No Token URI Found For Object With ID: {self.data['ledger_index']}")
@@ -183,7 +182,7 @@ class Engine:
             )
 
     async def retry_v2(self, token_id, token_uri, issuer, completed, errors):
-        print(f"starting retry for {token_id}")
+        logger.info(f"starting retry for {token_id}")
         if type(token_uri) == float or token_uri is None:
             data = {"Issuer": issuer}
             token_uri = await DomainURIExtractor.async_extract(data, token_id)
@@ -195,10 +194,10 @@ class Engine:
         try:
             await self._extract_assets(token_id, token_uri)
         except Exception as e:
-            print(e)
+            logger.error(e)
             errors.append({"token_id": token_id, "issuer": issuer, "uri": token_uri, "error": str(e)})
         completed[token_id] = True
-        print(f"completed retry for {token_id}")
+        logger.error(f"completed retry for {token_id}")
 
     async def public_retry(self, token_id):
         import json
