@@ -1,11 +1,12 @@
 import json
 import logging
+from typing import List
 import asyncio
 import traceback
 from abc import ABCMeta, abstractmethod
 
 from writers import AsyncS3FileWriter, Config
-from utils import delete_from_s3, read_json
+from utils import delete_from_s3, read_json, chunks
 from fetcher import Fetcher
 from image_processor import process_image
 from extractors import TokenIDExtractor, TokenURIExtractor, DomainURIExtractor
@@ -125,6 +126,70 @@ class AssetExtractionEngine(BaseAssetExtractionEngine):
         else:
             token_uri = self.token_uri_extractor.extract()
         await self._extract_assets(token_id, token_uri)
+
+
+class TextMetadataRerunEngine(BaseAssetExtractionEngine):
+    def __init__(self, paths: List, data=None):
+        super().__init__(data=data if data is not None else {"URI": ""})
+        self.paths = paths
+
+    async def __extract_metadata_and_assets(self, meta_data, token_id):
+        content_exists = meta_data.get("content")  # noqa
+        if content_exists:
+            content, content_type = await self.fetcher.fetch(content_exists.replace("cid:", ""))
+            file_type = content_type.split("/")[0]
+            if file_type == "image":
+                await self._dump_image(content, token_id, content_type)
+            else:
+                ext = content_type.split("/")[1]
+                await self._dump_file(file_type, token_id, content, content_type, ext)
+        await self._dump_metadata(meta_data, token_id)
+
+        # Search for Other Assets in the MetaData Json and Upload to s3
+        image_url = meta_data.get("image", meta_data.get("image_url"))  # noqa
+        video_url = meta_data.get("video", meta_data.get("video_url"))
+        file_url = meta_data.get("file", meta_data.get("file_url"))
+        animation_url = meta_data.get("animation", meta_data.get("animation_url"))
+        audio_url = meta_data.get("audio", meta_data.get("audio_url"))
+        thumbnail_url = meta_data.get("thumbnail", meta_data.get("thumbnail_url"))
+        if image_url:
+            image_content, content_type = await self.fetcher.fetch(image_url)
+            if image_content is not None:
+                await self._dump_image(image_content, token_id, content_type)
+        if video_url:  # noqa
+            video_content, content_type = await self.fetcher.fetch(video_url)
+            if video_content:
+                ext = content_type.split("/")[1]
+                await self._dump_file("video", token_id, video_content, content_type, ext)
+        if file_url:  # noqa
+            logger.info(f"Found File URL: {file_url}")
+        if audio_url:
+            logger.info(f"Found Audio URL: {audio_url}")
+        if thumbnail_url:
+            logger.info(f"Found Thumbnail URL: {thumbnail_url}")
+        if animation_url:  # noqa
+            animation_content, content_type = await self.fetcher.fetch(animation_url)
+            ext = content_type.split("/")[1]
+            if animation_content:
+                await self._dump_file("animation", token_id, animation_content, content_type, ext)
+
+    async def _extract_metadata_and_assets(self, path):
+        try:
+            path_split = path.split("/")
+            token_id = path_split[2]
+            metadata = await read_json(Config.DATA_DUMP_BUCKET, path, Config)
+            await self.__extract_metadata_and_assets(metadata, token_id)
+            await delete_from_s3(Config.DATA_DUMP_BUCKET, path, Config)
+        except json.JSONDecodeError:
+            await delete_from_s3(Config.DATA_DUMP_BUCKET, path, Config)
+        except Exception as e:
+            logger.error(f"Error Extracting Metadata and Asset for {path}. Error: {e}")
+
+    async def _run(self):
+        for chunk in chunks(self.paths, 100):
+            await asyncio.gather(*[self._extract_metadata_and_assets(path) for path in chunk])
+
+
 
 class RetryEngine(BaseAssetExtractionEngine):
     def __init__(self, data=None, path=None):
