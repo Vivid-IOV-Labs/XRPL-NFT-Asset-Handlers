@@ -1,10 +1,16 @@
 from typing import List, Dict, Optional
 import logging
 from utils import hex_to_text, is_ipfs, is_normal_url, fetch_account_info, fetch_account_info_async
+from abc import ABCMeta, abstractmethod
 
 
 
 logger = logging.getLogger("app_log")
+
+class BaseExtractor(metaclass=ABCMeta):
+    @abstractmethod
+    def extract(self):
+        ...
 
 
 class TokenIDExtractor:
