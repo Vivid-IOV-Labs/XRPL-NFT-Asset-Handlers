@@ -106,11 +106,11 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
             raise NoMetaDataException(f"Could Not Fetch Metadata for {token_uri}")
 
     @abstractmethod
-    async def _run(self, **kwargs):
+    async def _run(self):
         ...
 
-    def run(self, **kwargs):
-        asyncio.run(self._run(**kwargs))
+    def run(self):
+        asyncio.run(self._run())
         # logger.info(f"Running for transaction with hash -> {self.data['hash']}")
         # token_id = self.token_id_extractor.extract()
         # if token_id is None:
@@ -125,13 +125,14 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
 
 
 class RetryEngine(BaseAssetExtractionEngine):
-    async def _run(self, **kwargs):
-        path = kwargs.get("path")
-        data = kwargs.get("data")
+    def __init__(self, data=None, path=None):
         if path is None and data is None:
             raise Exception("Either path or data must be specified")
+        super().__init__(data={"URI": ""} if data is None else data)
+        self.path = path
 
-        data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config) if path is not None else data
+    async def _run(self):
+        data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, self.path, Config) if self.path is not None else self.data
         if type(data) != dict:
             data = json.loads(data)
         self.token_uri_extractor.data = data
@@ -155,8 +156,28 @@ class RetryEngine(BaseAssetExtractionEngine):
             )
 
 
+class PublicRetryEngine(BaseAssetExtractionEngine):
+    def __init__(self, token_id, data=None):
+        super().__init__(data={"URI": ""})
+        self.token_id = token_id
 
-
+    async def _run(self):
+        base_url = "https://bithomp.com/api/v2/nft"
+        url = f"{base_url}/{self.token_id}?uri=true"
+        response, _content_type = await self.fetcher.fetch(url, headers={"x-bithomp-token": Config.BITHOMP_TOKEN})
+        response = json.loads(response)
+        token_uri = response["uri"]
+        self.token_uri_extractor.data = {"URI": token_uri}
+        token_uri = self.token_uri_extractor.extract()
+        try:
+            await self._extract_assets(self.token_id, token_uri)
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await self.writer.write_json(f"publicapinotfound/done/{self.token_id}.json", {"URI": token_uri, "NFTokenID": self.token_id})
+        except Exception as e:  # noqa
+            logger.error(traceback.format_exc())
+            error = {"token_id": self.token_id, "uri": token_uri, "error": str(e)}
+            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
+            await self.writer.write_json(f"publicapinotfound/error/{self.token_id}.json", error)
 
 
 class Engine:
@@ -304,30 +325,6 @@ class Engine:
             token_uri = self.token_uri_extractor.extract()
         await self._extract_assets(token_id, token_uri)
 
-    # async def retry(self, path=None, data=None):
-    #     data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, path, Config) if path is not None else data
-    #     if type(data) != dict:
-    #         data = json.loads(data)
-    #     self.token_uri_extractor.data = data
-    #     token_id = data.get("NFTokenID", "none")
-    #     try:
-    #         if "URI" not in data:
-    #             token_uri = DomainURIExtractor.extract(data, token_id)
-    #         else:
-    #             token_uri = self.token_uri_extractor.extract()
-    #         await self._extract_assets(token_id, token_uri)
-    #         self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
-    #         await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
-    #         await self.writer.write_json(f"done/{token_id}.json", {"URI": token_uri, "NFTokenID": token_id})
-    #     except Exception as e: # noqa
-    #         logger.error(traceback.format_exc())
-    #         self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
-    #         await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
-    #         await self.writer.write_json(
-    #             f"error/{token_id}.json",
-    #             {"URI": self.data.get("URI"), "NFTokenID": token_id, "error": traceback.format_exc(), **data}
-    #         )
-
     async def retry_v2(self, token_id, token_uri, issuer, completed, errors):
         logger.info(f"starting retry for {token_id}")
         if type(token_uri) == float or token_uri is None:
@@ -345,22 +342,3 @@ class Engine:
             errors.append({"token_id": token_id, "issuer": issuer, "uri": token_uri, "error": str(e)})
         completed[token_id] = True
         logger.error(f"completed retry for {token_id}")
-
-    async def public_retry(self, token_id):
-        import json
-        base_url = "https://bithomp.com/api/v2/nft"
-        url = f"{base_url}/{token_id}?uri=true"
-        response, _content_type = await self.fetcher.fetch(url, headers={"x-bithomp-token": Config.BITHOMP_TOKEN})
-        response = json.loads(response)
-        token_uri = response["uri"]
-        self.token_uri_extractor.data = {"URI": token_uri}
-        token_uri = self.token_uri_extractor.extract()
-        try:
-            await self._extract_assets(token_id, token_uri)
-            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
-            await self.writer.write_json(f"publicapinotfound/done/{token_id}.json", {"URI": token_uri, "NFTokenID": token_id})
-        except Exception as e:  # noqa
-            logger.error(traceback.format_exc())
-            error = {"token_id": token_id, "uri": token_uri, "error": str(e)}
-            self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
-            await self.writer.write_json(f"publicapinotfound/error/{token_id}.json", error)

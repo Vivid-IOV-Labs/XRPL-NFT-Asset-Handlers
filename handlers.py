@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from engine import Engine
+from engine import Engine, RetryEngine, PublicRetryEngine
 from asset_fetcher import AssetFetcher
 
 logger = logging.getLogger("app_log")
@@ -48,16 +48,14 @@ def fetch_project_metadata(event, context):
     return fetcher.fetch_project_metadata()
 
 def retry(event, context):
-    engine = Engine({"URI": ""})
     path = event["Records"][0]["s3"]["object"]["key"]
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(engine.retry(path))
+    engine = RetryEngine(path=path)
+    engine.run()
 
 def public_retry(event, content):
-    engine = Engine({"URI": ""})
     token_id = event["pathParameters"].get("token_id", None)
     if token_id is None:
         return {"statusCode": 400, "body": "token_id required"}
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(engine.public_retry(token_id))
+    engine = PublicRetryEngine(token_id=token_id)
+    engine.run()
     return {"statusCode": 200}

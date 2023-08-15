@@ -2,7 +2,7 @@ import asyncio
 import argparse
 import json
 
-from engine import Engine
+from engine import Engine, RetryEngine, PublicRetryEngine
 from asset_fetcher import AssetFetcher
 import logging
 
@@ -55,7 +55,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--command", required=True, help="Command type to run. Accepts `extract` or `fetch`")
     parser.add_argument("--stage", help="For asset extraction, we have `nft-mint`, `retry`, `public-retry` and `projects-retry`")
-    parser.add_argument("--txn_path", help="Path to the json file for minted transaction")
+    parser.add_argument("--data_path", help="Path to the json file for input")
+    parser.add_argument("--token_id", help="NFT token id")
     args = parser.parse_args()
 
     # Initialize Loggers
@@ -76,10 +77,18 @@ if __name__ == "__main__":
     # Execute the command
     if command == "extract":
         if stage == "nft-mint":
-            path = args.txn_path
+            path = args.data_path
             data = json.load(open(path, "r"))
             engine = Engine(data)
             asyncio.run(engine.run())
 
         elif stage == "retry":
-            pass
+            path = args.data_path
+            data = json.load(open(path, "r"))
+            engine = RetryEngine(data=data)
+            engine.run()
+
+        elif stage == "public-retry":
+            token_id = args.token_id
+            engine = PublicRetryEngine(token_id=token_id)
+            engine.run()
