@@ -55,6 +55,7 @@ if __name__ == "__main__":
                 engine.path = path
             else:
                 data = json.load(open(path, "r"))
+                engine.path = None
                 engine.data = data
             engine.run()
 

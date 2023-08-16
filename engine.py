@@ -4,6 +4,7 @@ from typing import List
 import asyncio
 import traceback
 from abc import ABCMeta, abstractmethod
+from PIL import UnidentifiedImageError
 
 from writers import AsyncS3FileWriter, Config
 from utils import delete_from_s3, read_json, chunks
@@ -85,7 +86,10 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
             if image_url:
                 image_content, content_type = await self.fetcher.fetch(image_url)
                 if image_content is not None:
-                    await self._dump_image(image_content, token_id, content_type)
+                    try:
+                        await self._dump_image(image_content, token_id, content_type)
+                    except UnidentifiedImageError as e:
+                        logger.error(f"Could not dump Image with content-type: {content_type}. Error: {e}")
             if video_url:  # noqa
                 video_content, content_type = await self.fetcher.fetch(video_url)
                 ext = content_type.split("/")[1]
@@ -206,7 +210,7 @@ class RetryEngine(BaseAssetExtractionEngine):
         self.token_uri_extractor.data = data
         token_id = data.get("NFTokenID", "none")
         try:
-            if "URI" not in data:
+            if not data.get("URI", ""):
                 token_uri = DomainURIExtractor.extract(data, token_id)
             else:
                 token_uri = self.token_uri_extractor.extract()
