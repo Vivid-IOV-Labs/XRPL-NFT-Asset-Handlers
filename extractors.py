@@ -109,7 +109,7 @@ class DomainURIExtractor:
             return f"{domain}{token_id}.json"
         else:
             logger.info(f"Unrecognized Domain --> {domain}")
-            raise ValueError
+            raise ValueError(f"Unrecognized Domain --> {domain}")
 
     @staticmethod
     async def async_extract(data, token_id):
