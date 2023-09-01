@@ -1,6 +1,10 @@
-import asyncio
+import enum
 import logging
+import requests
+from enum import Enum
+
 from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine
+from config import Config
 from asset_fetcher import AssetFetcher
 
 logger = logging.getLogger("app_log")
@@ -12,6 +16,35 @@ logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
 
+class EventName(Enum):
+    METADATA = "metadata"
+    COLLECTIONS = "metadata_collections"
+    THUMBNAILS = "metadata_thumbnails"
+    IMAGES = "metadata_images"
+    ANIMATIONS = "metadata_animations"
+
+
+def google_analytics(name: EventName, ip_address: str, token_id: str):
+    secret = Config.GOOGLE_ANALYTICS_SECRET_KEY
+    measurement_id = Config.GOOGLE_ANALYTICS_MEASUREMENT_ID
+    base_url = Config.GOOGLE_ANALYTICS_BASE_URL
+    client_id = Config.GOOGLE_ANALYTICS_CLIENT_ID
+
+    url = f"{base_url}?measurement_id={measurement_id}&api_secret={secret}"
+    requests.post(url, data={
+        "client_id": client_id,
+        "events": [
+            {
+                "name": name.value,
+                "params": {
+                    "ip_address": ip_address,
+                    "token_id": token_id
+                }
+            }
+        ]
+    })
+
+
 def nft_data_handler(event, context):
     data = event["result"]
     engine = AssetExtractionEngine(data)
@@ -19,32 +52,54 @@ def nft_data_handler(event, context):
 
 
 def fetch_images_handler(event, context):
+    ip_address = event['headers']['x-forwarded-for']
+    token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
-    return fetcher.fetch(asset_type="image")
+    result = fetcher.fetch(asset_type="image")
+    google_analytics(EventName.IMAGES, ip_address, token_id)
+    return result
 
 def fetch_thumbnail_handler(event, context):
+    ip_address = event['headers']['x-forwarded-for']
+    token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
-    return fetcher.fetch(asset_type="thumbnail")
+    result = fetcher.fetch(asset_type="thumbnail")
+    google_analytics(EventName.THUMBNAILS, ip_address, token_id)
+    return result
 
 def fetch_animation_handler(event, context):
+    ip_address = event['headers']['x-forwarded-for']
+    token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
-    return fetcher.fetch(asset_type="animation")
+    result = fetcher.fetch(asset_type="animation")
+    google_analytics(EventName.ANIMATIONS, ip_address, token_id)
+    return result
 
 def fetch_metadata_handler(event, context):
+    ip_address = event['headers']['x-forwarded-for']
+    token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
-    return fetcher.fetch(asset_type="metadata")
+    result = fetcher.fetch(asset_type="metadata")
+    google_analytics(EventName.METADATA, ip_address, token_id)
+    return result
+
 
 def fetch_audio_handler(event, context):
     fetcher = AssetFetcher(event)
-    return fetcher.fetch(asset_type="audio")
+    result = fetcher.fetch(asset_type="audio")
+    return result
 
 def fetch_video_handler(event, context):
     fetcher = AssetFetcher(event)
     return fetcher.fetch(asset_type="video")
 
 def fetch_project_metadata(event, context):
+    ip_address = event['headers']['x-forwarded-for']
+    token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
-    return fetcher.fetch_project_metadata()
+    result = fetcher.fetch_project_metadata()
+    google_analytics(EventName.COLLECTIONS, ip_address, token_id)
+    return result
 
 def retry(event, context):
     path = event["Records"][0]["s3"]["object"]["key"]
