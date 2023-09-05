@@ -1,4 +1,3 @@
-import enum
 import logging
 import requests
 from enum import Enum
@@ -25,24 +24,24 @@ class EventName(Enum):
 
 
 def google_analytics(name: EventName, ip_address: str, token_id: str):
-    secret = Config.GOOGLE_ANALYTICS_SECRET_KEY
     measurement_id = Config.GOOGLE_ANALYTICS_MEASUREMENT_ID
-    base_url = Config.GOOGLE_ANALYTICS_BASE_URL
     client_id = Config.GOOGLE_ANALYTICS_CLIENT_ID
 
-    url = f"{base_url}?measurement_id={measurement_id}&api_secret={secret}"
-    requests.post(url, data={
-        "client_id": client_id,
-        "events": [
-            {
-                "name": name.value,
-                "params": {
-                    "ip_address": ip_address,
-                    "token_id": token_id
-                }
-            }
-        ]
-    })
+    payload = {
+        'v': '1',
+        'tid': measurement_id,
+        'cid': client_id,
+        't': 'event',
+        'ec': name.value,
+        'ea': name.value,
+        'el': name.value,
+        'ev': name.value,
+        'token_id': token_id,
+        'ip_address': ip_address
+    }
+
+    url = "https://www.google-analytics.com/collect"
+    requests.post(url, data=payload)
 
 
 def nft_data_handler(event, context):
