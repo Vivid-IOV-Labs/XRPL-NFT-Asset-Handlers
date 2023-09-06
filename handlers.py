@@ -36,8 +36,8 @@ def google_analytics(name: EventName, ip_address: str, token_id: str):
         'ea': name.value,
         'el': name.value,
         'ev': name.value,
-        'token_id': token_id,
-        'ip_address': ip_address
+        # 'token_id': token_id,
+        # 'ip_address': ip_address
     }
 
     url = "https://www.google-analytics.com/collect"

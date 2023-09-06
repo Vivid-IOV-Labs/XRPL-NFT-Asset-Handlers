@@ -9,3 +9,4 @@ tracked-nfts1.csv
 .serverless
 psycopg2-2
 *.pem
+scratch.py
