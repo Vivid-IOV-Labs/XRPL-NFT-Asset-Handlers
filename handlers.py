@@ -1,5 +1,7 @@
 import logging
 import requests
+import time
+import json
 from enum import Enum
 
 from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine
@@ -23,25 +25,22 @@ class EventName(Enum):
     ANIMATIONS = "metadata_animations"
 
 
-def google_analytics(name: EventName, ip_address: str, token_id: str):
-    measurement_id = Config.GOOGLE_ANALYTICS_MEASUREMENT_ID
-    client_id = Config.GOOGLE_ANALYTICS_CLIENT_ID
-
+def mixpanel_tracking(event: EventName, ip_address: str, token_id: str):
     payload = {
-        'v': '1',
-        'tid': measurement_id,
-        'cid': client_id,
-        't': 'event',
-        'ec': name.value,
-        'ea': name.value,
-        'el': name.value,
-        'ev': name.value,
-        # 'token_id': token_id,
-        # 'ip_address': ip_address
+        "event": event.value(),
+        "properties": {
+            "time": int(time.time()),
+            "ip_address": ip_address,
+            "token_id": token_id,
+            "token": Config.MIXPANEL_PROJECT_TOKEN
+        }
     }
-
-    url = "https://www.google-analytics.com/collect"
-    requests.post(url, data=payload)
+    requests.post(
+        "https://api.mixpanel.com/track",
+        params={"strict": "1"},
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(payload)
+    )
 
 
 def nft_data_handler(event, context):
@@ -55,7 +54,7 @@ def fetch_images_handler(event, context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="image")
-    google_analytics(EventName.IMAGES, ip_address, token_id)
+    mixpanel_tracking(EventName.IMAGES, ip_address, token_id)
     return result
 
 def fetch_thumbnail_handler(event, context):
@@ -63,7 +62,7 @@ def fetch_thumbnail_handler(event, context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="thumbnail")
-    google_analytics(EventName.THUMBNAILS, ip_address, token_id)
+    mixpanel_tracking(EventName.THUMBNAILS, ip_address, token_id)
     return result
 
 def fetch_animation_handler(event, context):
@@ -71,7 +70,7 @@ def fetch_animation_handler(event, context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="animation")
-    google_analytics(EventName.ANIMATIONS, ip_address, token_id)
+    mixpanel_tracking(EventName.ANIMATIONS, ip_address, token_id)
     return result
 
 def fetch_metadata_handler(event, context):
@@ -79,7 +78,7 @@ def fetch_metadata_handler(event, context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="metadata")
-    google_analytics(EventName.METADATA, ip_address, token_id)
+    mixpanel_tracking(EventName.METADATA, ip_address, token_id)
     return result
 
 
@@ -97,7 +96,7 @@ def fetch_project_metadata(event, context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch_project_metadata()
-    google_analytics(EventName.COLLECTIONS, ip_address, token_id)
+    mixpanel_tracking(EventName.COLLECTIONS, ip_address, token_id)
     return result
 
 def retry(event, context):
