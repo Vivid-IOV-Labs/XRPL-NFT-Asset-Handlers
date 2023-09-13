@@ -26,15 +26,15 @@ class EventName(Enum):
 
 
 def mixpanel_tracking(event: EventName, ip_address: str, token_id: str):
-    payload = {
-        "event": event.value(),
+    payload = [{
+        "event": event.value,
         "properties": {
             "time": int(time.time()),
             "ip_address": ip_address,
             "token_id": token_id,
             "token": Config.MIXPANEL_PROJECT_TOKEN
         }
-    }
+    }]
     requests.post(
         "https://api.mixpanel.com/track",
         params={"strict": "1"},
