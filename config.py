@@ -24,9 +24,9 @@ class Config:
     GOOGLE_ANALYTICS_CLIENT_ID = os.getenv("GOOGLE_ANALYTICS_CLIENT_ID")
     MIXPANEL_PROJECT_TOKEN = os.getenv("MIXPANEL_PROJECT_TOKEN")
     DB_HOST = os.getenv("DB_HOST")
-    RDS_PASSWORD = os.getenv("RDS_PASSWORD")
-    RDS_USER = os.getenv("RDS_USER")
-    RDS_PORT = os.getenv("RDS_PORT")
+    RDS_PASSWORD = os.getenv("DB_PASSWORD")
+    RDS_USER = os.getenv("DB_USER")
+    RDS_PORT = os.getenv("DB_PORT")
     DB_NAME = os.getenv("DB_NAME")
     IPFS_HOSTS = [
         "https://nftstorage.link/ipfs",

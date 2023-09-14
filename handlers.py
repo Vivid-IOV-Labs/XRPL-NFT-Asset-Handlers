@@ -93,10 +93,10 @@ def fetch_video_handler(event, context):
 
 def fetch_project_metadata(event, context):
     # ip_address = event['headers']['x-forwarded-for']
-    token_id = event['pathParameters']['token_id']
+    # token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch_project_metadata()
-    mixpanel_tracking(EventName.COLLECTIONS, "", token_id)
+    mixpanel_tracking(EventName.COLLECTIONS, "", "")
     return result
 
 def retry(event, context):
