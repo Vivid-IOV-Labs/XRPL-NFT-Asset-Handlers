@@ -50,35 +50,35 @@ def nft_data_handler(event, context):
 
 
 def fetch_images_handler(event, context):
-    ip_address = event['headers']['x-forwarded-for']
+    # ip_address = event['headers']['x-forwarded-for']
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="image")
-    mixpanel_tracking(EventName.IMAGES, ip_address, token_id)
+    mixpanel_tracking(EventName.IMAGES, "", token_id)
     return result
 
 def fetch_thumbnail_handler(event, context):
-    ip_address = event['headers']['x-forwarded-for']
+    # ip_address = event['headers']['x-forwarded-for']
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="thumbnail")
-    mixpanel_tracking(EventName.THUMBNAILS, ip_address, token_id)
+    mixpanel_tracking(EventName.THUMBNAILS, "", token_id)
     return result
 
 def fetch_animation_handler(event, context):
-    ip_address = event['headers']['x-forwarded-for']
+    # ip_address = event['headers']['x-forwarded-for']
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="animation")
-    mixpanel_tracking(EventName.ANIMATIONS, ip_address, token_id)
+    mixpanel_tracking(EventName.ANIMATIONS, "", token_id)
     return result
 
 def fetch_metadata_handler(event, context):
-    ip_address = event['headers']['x-forwarded-for']
+    # ip_address = event['headers']['x-forwarded-for']
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="metadata")
-    mixpanel_tracking(EventName.METADATA, ip_address, token_id)
+    mixpanel_tracking(EventName.METADATA, "", token_id)
     return result
 
 
@@ -92,17 +92,20 @@ def fetch_video_handler(event, context):
     return fetcher.fetch(asset_type="video")
 
 def fetch_project_metadata(event, context):
-    ip_address = event['headers']['x-forwarded-for']
+    # ip_address = event['headers']['x-forwarded-for']
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch_project_metadata()
-    mixpanel_tracking(EventName.COLLECTIONS, ip_address, token_id)
+    mixpanel_tracking(EventName.COLLECTIONS, "", token_id)
     return result
 
 def retry(event, context):
     path = event["Records"][0]["s3"]["object"]["key"]
     engine = RetryEngine(path=path)
     engine.run()
+
+def public_retry_api(event, context):
+    pass
 
 def public_retry(event, content):
     token_id = event["pathParameters"].get("token_id", None)

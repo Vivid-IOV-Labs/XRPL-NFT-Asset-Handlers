@@ -104,6 +104,8 @@ functions:
       - httpApi:
           path: /assets/audios/{token_id}
           method: get
+#  retry:
+#    pass
   public-retry:
     handler: handlers.public_retry
     events:
