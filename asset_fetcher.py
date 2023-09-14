@@ -110,7 +110,7 @@ class AssetFetcher:
 
         issuer = params.get("issuer")
         taxon = params.get("taxon")
-        page_num = int(query_params.get("page"))
+        page_num = int(query_params.get("page")) if query_params else 1
 
         if int(page_num) <= 0:
             return {"statusCode": 400, "body": "invalid page number"}
