@@ -1,5 +1,6 @@
 import logging
 import requests
+import boto3
 import time
 import json
 from enum import Enum
@@ -105,12 +106,24 @@ def retry(event, context):
     engine.run()
 
 def public_retry_api(event, context):
-    pass
+    payload = bytes(json.dumps({"token_id": event["pathParameters"].get("token_id", None)}), "utf-8")
+    lambda_client = boto3.client(
+        "lambda",
+        region_name="eu-west-2",
+        aws_access_key_id=Config.ACCESS_KEY_ID,
+        aws_secret_access_key=Config.SECRET_ACCESS_KEY,
+    )
+    resp = lambda_client.invoke(
+        FunctionName=f"retry",
+        InvocationType="Event",
+        Payload=payload
+    )
+    logger.info(resp)
+    return {"statusCode": 200, "body": "Token ID Submitted for retry"}
+
 
 def public_retry(event, content):
-    token_id = event["pathParameters"].get("token_id", None)
-    if token_id is None:
-        return {"statusCode": 400, "body": "token_id required"}
+    token_id = event["token_id"]
     engine = PublicRetryEngine(token_id=token_id)
     engine.run()
     return {"statusCode": 200}

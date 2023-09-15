@@ -104,10 +104,12 @@ functions:
       - httpApi:
           path: /assets/audios/{token_id}
           method: get
-#  retry:
-#    pass
-  public-retry:
+  retry:
     handler: handlers.public_retry
+    name: retry
+    timeout: 900
+  public-retry:
+    handler: handlers.public_retry_api
     events:
       - httpApi:
           path: /assets/public-retry/{token_id}
