@@ -4,7 +4,6 @@ import json
 
 from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine, TextMetadataRerunEngine, Config
 from utils import fetch_text_objects
-from asset_fetcher import AssetFetcher
 import logging
 
 

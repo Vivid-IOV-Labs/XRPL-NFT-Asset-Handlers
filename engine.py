@@ -39,6 +39,35 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
         await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}", content, content_type)
         await self.writer.write_media(f"assets/{file_type}s/{token_id}/{file_type}.{extension}", content, content_type)
 
+    async def _process_image_metadata(self, token_uri: str, token_id: str, content: bytes, content_type: str):
+        meta_data = {
+            "image": token_uri
+        }
+        await self._dump_metadata(meta_data, token_id)
+        logger.info("Processing possible image metadata")
+        await self._dump_image(content, token_id, content_type)
+
+    async def _process_json_metadata(self, metadata: dict, token_id: str):
+        metadata_content = metadata.get("content")
+        if metadata_content:
+            content, content_type = await self.fetcher.fetch(metadata_content.replace("cid:", ""))
+            file_type = content_type.split("/")[0]
+            if file_type == "image":
+                await self._dump_image(content, token_id, content_type)
+            else:
+                ext = content_type.split("/")[1]
+                await self._dump_file(file_type, token_id, content, content_type, ext)
+        await self._dump_metadata(metadata, token_id)
+
+    async def _process_other_metadata_file_types(self, file_type: str, token_id: str, token_uri: str, content: bytes, content_type: str):
+        logger.info(f"Got FileType {file_type} For Metadata")
+        meta_data = {
+            file_type: token_uri
+        }
+        ext = content_type.split("/")[1]
+        await self._dump_metadata(meta_data, token_id)
+        await self._dump_file(file_type, token_id, content, content_type, ext)
+
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
             logger.info(f"No Token URI Found For Object With ID: {self.data['ledger_index']}")
@@ -49,32 +78,14 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
             file_type = content_type.split("/")[0]
             if file_type == "application" or file_type == "text":
                 meta_data = json.loads(content)
-                content_exists = meta_data.get("content")
-                if content_exists:
-                    content, content_type = await self.fetcher.fetch(content_exists.replace("cid:", ""))
-                    file_type = content_type.split("/")[0]
-                    if file_type == "image":
-                        await self._dump_image(content, token_id, content_type)
-                    else:
-                        ext = content_type.split("/")[1]
-                        await self._dump_file(file_type, token_id, content, content_type, ext)
-                await self._dump_metadata(meta_data, token_id)
+                await self._process_json_metadata(meta_data, token_id)
             elif file_type == "image":
-                meta_data = {
-                    "image": token_uri
-                }
-                await self._dump_metadata(meta_data, token_id)
-                logger.info("Processing possible image metadata")
-                await self._dump_image(content, token_id, content_type)
+                await self._process_image_metadata(token_uri, token_id, content, content_type)
                 return
             else:
-                logger.info(f"Got FileType {file_type} For Metadata")
-                meta_data = {
-                    file_type: token_uri
-                }
-                ext = content_type.split("/")[1]
-                await self._dump_metadata(meta_data, token_id)
-                await self._dump_file(file_type, token_id, content, content_type, ext)
+                await self._process_other_metadata_file_types(
+                    file_type, token_id, token_uri, content, content_type
+                )
 
             # Search for Other Assets in the MetaData Json and Upload to s3
             image_url = meta_data.get("image", meta_data.get("image_url"))

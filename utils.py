@@ -105,8 +105,7 @@ async def read_file(key, config, bucket):
     async with session.client("s3") as s3:
         try:
             res = await s3.get_object(Bucket=bucket, Key=key)
-        except Exception as e:
-            # print(e)
+        except Exception: # noqa
             return None
         body = res["Body"]
         data = await body.read()

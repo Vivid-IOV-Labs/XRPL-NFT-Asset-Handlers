@@ -44,38 +44,34 @@ def mixpanel_tracking(event: EventName, ip_address: str, token_id: str):
     )
 
 
-def nft_data_handler(event, context):
+def nft_data_handler(event, _context):
     data = event["result"]
     engine = AssetExtractionEngine(data)
     engine.run()
 
 
-def fetch_images_handler(event, context):
-    # ip_address = event['headers']['x-forwarded-for']
+def fetch_images_handler(event, _context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="image")
     mixpanel_tracking(EventName.IMAGES, "", token_id)
     return result
 
-def fetch_thumbnail_handler(event, context):
-    # ip_address = event['headers']['x-forwarded-for']
+def fetch_thumbnail_handler(event, _context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="thumbnail")
     mixpanel_tracking(EventName.THUMBNAILS, "", token_id)
     return result
 
-def fetch_animation_handler(event, context):
-    # ip_address = event['headers']['x-forwarded-for']
+def fetch_animation_handler(event, _context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="animation")
     mixpanel_tracking(EventName.ANIMATIONS, "", token_id)
     return result
 
-def fetch_metadata_handler(event, context):
-    # ip_address = event['headers']['x-forwarded-for']
+def fetch_metadata_handler(event, _context):
     token_id = event['pathParameters']['token_id']
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="metadata")
@@ -83,29 +79,27 @@ def fetch_metadata_handler(event, context):
     return result
 
 
-def fetch_audio_handler(event, context):
+def fetch_audio_handler(event, _context):
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="audio")
     return result
 
-def fetch_video_handler(event, context):
+def fetch_video_handler(event, _context):
     fetcher = AssetFetcher(event)
     return fetcher.fetch(asset_type="video")
 
-def fetch_project_metadata(event, context):
-    # ip_address = event['headers']['x-forwarded-for']
-    # token_id = event['pathParameters']['token_id']
+def fetch_project_metadata(event, _context):
     fetcher = AssetFetcher(event)
     result = fetcher.fetch_project_metadata()
     mixpanel_tracking(EventName.COLLECTIONS, "", "")
     return result
 
-def retry(event, context):
+def retry(event, _context):
     path = event["Records"][0]["s3"]["object"]["key"]
     engine = RetryEngine(path=path)
     engine.run()
 
-def public_retry_api(event, context):
+def public_retry_api(event, _context):
     payload = bytes(json.dumps({"token_id": event["pathParameters"].get("token_id", None)}), "utf-8")
     lambda_client = boto3.client(
         "lambda",
@@ -114,7 +108,7 @@ def public_retry_api(event, context):
         aws_secret_access_key=Config.SECRET_ACCESS_KEY,
     )
     resp = lambda_client.invoke(
-        FunctionName=f"retry",
+        FunctionName="retry",
         InvocationType="Event",
         Payload=payload
     )
@@ -125,7 +119,7 @@ def public_retry_api(event, context):
     }
 
 
-def public_retry(event, content):
+def public_retry(event, _content):
     token_id = event["token_id"]
     engine = PublicRetryEngine(token_id=token_id)
     engine.run()
