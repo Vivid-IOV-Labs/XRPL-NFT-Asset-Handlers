@@ -4,3 +4,7 @@ class NoMetaDataException(Exception):
 
 class DomainNotFoundException(Exception):
     pass
+
+
+class EngineException(Exception):
+    pass

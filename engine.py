@@ -11,7 +11,7 @@ from utils import delete_from_s3, read_json, chunks
 from fetcher import Fetcher
 from image_processor import process_image
 from extractors import TokenIDExtractor, TokenURIExtractor, DomainURIExtractor
-from exceptions import NoMetaDataException
+from exceptions import NoMetaDataException, EngineException
 
 logger = logging.getLogger("app_log")
 
@@ -198,14 +198,14 @@ class TextMetadataRerunEngine(BaseAssetExtractionEngine):
 class RetryEngine(BaseAssetExtractionEngine):
     def __init__(self, data=None, path=None):
         if path is None and data is None:
-            raise Exception("Either path or data must be specified")
+            raise EngineException("Either path or data must be specified")
         super().__init__(data={"URI": ""} if data is None else data)
         self.path = path
 
     async def _run(self):
         logger.info(f"Started Retry for Path {self.path}")
         data = await read_json(Config.CACHE_FAILED_LOG_BUCKET, self.path, Config) if self.path is not None else self.data
-        if type(data) != dict:
+        if not isinstance(data, dict):
             data = json.loads(data)
         self.token_uri_extractor.data = data
         token_id = data.get("NFTokenID", "none")
@@ -218,7 +218,7 @@ class RetryEngine(BaseAssetExtractionEngine):
             self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
             await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
             await self.writer.write_json(f"done/{token_id}.json", {"URI": token_uri, "NFTokenID": token_id})
-        except Exception as e: # noqa
+        except Exception: # noqa
             logger.error(traceback.format_exc())
             self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
             await delete_from_s3(Config.CACHE_FAILED_LOG_BUCKET, f"notfound/{token_id}.json", Config)
@@ -226,7 +226,6 @@ class RetryEngine(BaseAssetExtractionEngine):
                 f"error/{token_id}.json",
                 {"URI": self.data.get("URI"), "NFTokenID": token_id, "error": traceback.format_exc(), **data}
             )
-
 
 class PublicRetryEngine(BaseAssetExtractionEngine):
     def __init__(self, token_id, data=None):
@@ -250,23 +249,3 @@ class PublicRetryEngine(BaseAssetExtractionEngine):
             error = {"token_id": self.token_id, "uri": token_uri, "error": str(e)}
             self.writer.bucket = Config.CACHE_FAILED_LOG_BUCKET
             await self.writer.write_json(f"publicapinotfound/error/{self.token_id}.json", error)
-
-
-# class NFTProjectsRetry:
-#     async def retry_v2(self, token_id, token_uri, issuer, completed, errors):
-#         logger.info(f"starting retry for {token_id}")
-#         if type(token_uri) == float or token_uri is None:
-#             data = {"Issuer": issuer}
-#             token_uri = await DomainURIExtractor.async_extract(data, token_id)
-#         else:
-#             try:
-#                 token_uri = TokenURIExtractor({"URI": token_uri}).extract()
-#             except ValueError:
-#                 token_uri = token_uri
-#         try:
-#             await self._extract_assets(token_id, token_uri)
-#         except Exception as e:
-#             logger.error(e)
-#             errors.append({"token_id": token_id, "issuer": issuer, "uri": token_uri, "error": str(e)})
-#         completed[token_id] = True
-#         logger.error(f"completed retry for {token_id}")

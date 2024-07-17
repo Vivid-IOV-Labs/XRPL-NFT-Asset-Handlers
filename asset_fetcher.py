@@ -2,13 +2,33 @@ import json
 
 import boto3
 import base64
+from io import BytesIO
 from image_processor import resize_image
 from config import Config
 import psycopg2
 
 class AssetFetcher:
+
+    ACCESS_CONTROL_ALLOW_HEADERS = "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
+    ACCESS_CONTROL_ALLOW_METHODS = "GET, OPTIONS, HEAD"
+    ACCESS_CONTROL_ALLOW_CREDENTIALS = True
+
     def __init__(self, event: dict):
         self.event = event
+
+    def get_success_response(self, content_type: str, content):
+        return {
+            "headers": {
+                "Content-Type": content_type,
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": self.ACCESS_CONTROL_ALLOW_CREDENTIALS,
+                "Access-Control-Allow-Methods": self.ACCESS_CONTROL_ALLOW_METHODS,
+                "Access-Control-Allow-Headers": self.ACCESS_CONTROL_ALLOW_HEADERS
+            },
+            "statusCode": 200,
+            "body": base64.b64encode(content).decode("utf-8"),
+            "isBase64Encoded": True
+        }
 
     def fetch(self, asset_type: str):
         session = boto3.Session()
@@ -70,31 +90,9 @@ class AssetFetcher:
                 if asset_type == "image":
                     if req_height is not None or req_width is not None:
                         output_buffer = resize_image(content, req_height, req_width)
-                        return {
-                            "headers": {
-                                "Content-Type": content_type,
-                                "Access-Control-Allow-Origin" : "*",
-                                "Access-Control-Allow-Credentials" : True,
-                                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
-                                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
-                            },
-                            "statusCode": 200,
-                            "body": base64.b64encode(output_buffer.getvalue()).decode("utf-8"),
-                            "isBase64Encoded": True
-                        }
-
-                return {
-                    "headers": {
-                        "Content-Type": content_type,
-                        "Access-Control-Allow-Origin" : "*",
-                        "Access-Control-Allow-Credentials" : True,
-                        "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
-                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
-                    },
-                    "statusCode": 200,
-                    "body": base64.b64encode(content).decode("utf-8"),
-                    "isBase64Encoded": True
-                }
+                        content = output_buffer.getvalue()
+                        return self.get_success_response(content_type, content)
+                return self.get_success_response(content_type, content)
             except Exception as e:
                 print(e, key)
                 raise e
@@ -153,15 +151,6 @@ class AssetFetcher:
             "count": total_ids,
             "current_page": page_num
         }
-        return {
-            "headers": {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": True,
-                "Access-Control-Allow-Methods": "GET, OPTIONS, HEAD",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
-            },
-            "statusCode": 200,
-            "body": base64.b64encode(bytes(json.dumps(results), "utf-8")).decode("utf-8"),
-            "isBase64Encoded": True
-        }
+        content = bytes(json.dumps(results), "utf-8")
+        content_type = "application/json"
+        return self.get_success_response(content_type, content)

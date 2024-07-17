@@ -119,7 +119,10 @@ def public_retry_api(event, context):
         Payload=payload
     )
     logger.info(resp)
-    return {"statusCode": 200, "body": "Token ID Submitted for retry"}
+    return {
+        "statusCode": 200,
+        "body": '{"message": "Token ID Submitted for retry"}'
+    }
 
 
 def public_retry(event, content):

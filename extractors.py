@@ -4,7 +4,6 @@ from utils import hex_to_text, is_ipfs, is_normal_url, fetch_account_info, fetch
 from abc import ABCMeta, abstractmethod
 
 
-
 logger = logging.getLogger("app_log")
 
 class InvalidTxnResultException(Exception):
@@ -57,7 +56,7 @@ class TokenIDExtractor(BaseExtractor):
 
     def extract(self) -> Optional[str]:
         if self._data["meta"]["TransactionResult"] != "tesSUCCESS":
-            raise InvalidTxnResultException(f"Invalid Transaction Result")
+            raise InvalidTxnResultException("Invalid Transaction Result")
         try:
             nft_tokens = self._get_all_nft_tokens()
             hash_map = {}
@@ -76,7 +75,6 @@ class TokenIDExtractor(BaseExtractor):
             logger.error(f"Error getting nft-token-id: {e}")
         return None
 
-
 class TokenURIExtractor(BaseExtractor):
     def __init__(self, data: Dict):
         self.data = data
@@ -89,7 +87,6 @@ class TokenURIExtractor(BaseExtractor):
                 token_uri = token_uri.replace("cid:", "")
             return f"ipfs://{token_uri}"
         return token_uri
-
 
 class DomainURIExtractor:
     @staticmethod
