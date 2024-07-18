@@ -115,9 +115,7 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
     async def _extract_animation_from_metadata(self, meta_data: dict, token_id: str):
         animation_url = meta_data.get("animation", meta_data.get("animation_url"))
         if animation_url:
-            animation_content, content_type = await self.fetcher.fetch(
-                animation_url
-            )
+            animation_content, content_type = await self.fetcher.fetch(animation_url)
             ext = content_type.split("/")[1]
             if animation_content:
                 await self._dump_file(
@@ -157,8 +155,7 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
             raise NoMetaDataException(f"Could Not Fetch Metadata for {token_uri}")
 
     @abstractmethod
-    async def _run(self):
-        ...
+    async def _run(self): ...
 
     def run(self):
         asyncio.run(self._run())
