@@ -1,4 +1,6 @@
 import json
+import mimetypes
+from typing import List
 
 import boto3
 import base64
@@ -15,6 +17,14 @@ class AssetFetcher:
 
     def __init__(self, event: dict):
         self.event = event
+        self.asset_to_content_type_mapping = {
+            'image': 'image/jpeg',
+            'video': 'video/mp4',
+            'audio': None,
+            'animation': None,
+            'thumbnail': 'image/jpeg',
+            'metadata': 'application/json',
+        }
 
     def get_success_response(self, content_type: str, content):
         return {
@@ -30,7 +40,71 @@ class AssetFetcher:
             "isBase64Encoded": True
         }
 
+    @staticmethod
+    def _get_possible_image_keys(token_id: str) -> List[str]:
+        return [f"assets/images/{token_id}/full/image", f"assets/images/{token_id}/full/image.jpeg"]
+
+    @staticmethod
+    def _get_possible_thumbnail_keys(token_id: str) -> List[str]:
+        return [f"assets/images/{token_id}/200px/image", f"assets/images/{token_id}/200px/image.jpeg"]
+
+    @staticmethod
+    def _get_possible_animation_keys(token_id: str) -> List[str]:
+        return [
+            f"assets/animations/{token_id}/animation", f"assets/animations/{token_id}/animation.mp4",
+            f"assets/animations/{token_id}/animation.png", f"assets/animations/{token_id}/animation.gif"
+        ]
+
+    @staticmethod
+    def _get_possible_video_keys(token_id: str) -> List[str]:
+        return [f"assets/video/{token_id}/video", f"assets/video/{token_id}/video.mp4"]
+
+    @staticmethod
+    def _get_possible_audio_keys(token_id: str) -> List[str]:
+        return [
+            f"assets/audio/{token_id}/audio", f"assets/audio/{token_id}/audio.mpeg",
+            f"assets/audio/{token_id}/audio.wav"
+        ]
+
+    @staticmethod
+    def _get_possible_metadata_keys(token_id: str) -> List[str]:
+        return [f"assets/metadata/{token_id}/metadata", f"assets/metadata/{token_id}/metadata.json"]
+
+    def _get_possible_keys_for_asset(self, asset_type: str, token_id: str) -> List[str]:
+        if asset_type == "image":
+            return self._get_possible_image_keys(token_id)
+
+        if asset_type == "thumbnail":
+            return self._get_possible_thumbnail_keys(token_id)
+
+        if asset_type == "animation":
+            return self._get_possible_animation_keys(token_id)
+
+        if asset_type == "video":
+            return self._get_possible_video_keys(token_id)
+
+        if asset_type == "metadata":
+            return self._get_possible_metadata_keys(token_id)
+
+        if asset_type == "audio":
+            return self._get_possible_audio_keys(token_id)
+
+    @staticmethod
+    def _get_content_type_from_asset_key(key: str, asset_type: str) -> str:
+        file_name = key.split("/")[-1]
+        content_type = file_name.replace(f"{asset_type}.", "")
+        return content_type
+
+    @staticmethod
+    def _resize_image(content, target_height, target_width):
+        output_buffer = resize_image(content, target_height, target_width)
+        output = output_buffer.getvalue()
+        return output
+
+
     def fetch(self, asset_type: str):
+        if asset_type not in self.asset_to_content_type_mapping.keys():
+            return {"statusCode": 400}
         session = boto3.Session()
         s3 = session.client("s3")
         bucket = Config.DATA_DUMP_BUCKET
@@ -44,38 +118,8 @@ class AssetFetcher:
             req_width = query_params.get("width")
         token_id = params.get("token_id")
 
-        keys = []
-        content_type = None
-        if asset_type == "image":
-            content_type = "image/jpeg"
-            keys.append(f"assets/images/{token_id}/full/image")
-            keys.append(f"assets/images/{token_id}/full/image.jpeg")
-
-        if asset_type == "thumbnail":
-            content_type = "image/jpeg"
-            keys.append(f"assets/images/{token_id}/200px/image")
-            keys.append(f"assets/images/{token_id}/200px/image.jpeg")
-
-        if asset_type == "animation":
-            keys.append(f"assets/animations/{token_id}/animation")
-            keys.append(f"assets/animations/{token_id}/animation.mp4")
-            keys.append(f"assets/animations/{token_id}/animation.png")
-            keys.append(f"assets/animations/{token_id}/animation.gif")
-
-        if asset_type == "video":
-            content_type = "video/mp4"
-            keys.append(f"assets/video/{token_id}/video")
-            keys.append(f"assets/video/{token_id}/video.mp4")
-
-        if asset_type == "metadata":
-            content_type = "application/json"
-            keys.append(f"assets/metadata/{token_id}/metadata")
-            keys.append(f"assets/metadata/{token_id}/metadata.json")
-
-        if asset_type == "audio":
-            keys.append(f"assets/audio/{token_id}/audio")
-            keys.append(f"assets/audio/{token_id}/audio.mpeg")
-            keys.append(f"assets/audio/{token_id}/audio.wav")
+        keys = self._get_possible_keys_for_asset(asset_type, token_id)
+        content_type = self.asset_to_content_type_mapping[asset_type]
 
         for key in keys:
             try:
@@ -83,19 +127,13 @@ class AssetFetcher:
                 body = obj['Body']
                 content = body.read()
                 if content_type is None:
-                    if asset_type == "animation":
-                        content_type = key.split("/")[-1].replace("animation.", "")
-                    if asset_type == "audio":
-                        content_type = key.split("/")[-1].replace("audio.", "")
-                if asset_type == "image":
-                    if req_height is not None or req_width is not None:
-                        output_buffer = resize_image(content, req_height, req_width)
-                        content = output_buffer.getvalue()
-                        return self.get_success_response(content_type, content)
+                    content_type = self._get_content_type_from_asset_key(key, asset_type)
+                if asset_type == "image" and (req_height is not None or req_width is not None):
+                    content = self._resize_image(content, req_height, req_width)
                 return self.get_success_response(content_type, content)
             except Exception as e:
                 print(e, key)
-                raise e
+                continue
         return {"statusCode": 400}
 
     def fetch_project_metadata(self):
