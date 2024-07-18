@@ -90,6 +90,40 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
         await self._dump_metadata(meta_data, token_id)
         await self._dump_file(file_type, token_id, content, content_type, ext)
 
+    async def _extract_image_from_metadata(self, meta_data: dict, token_id: str):
+        image_url = meta_data.get("image", meta_data.get("image_url"))
+        if image_url:
+            image_content, content_type = await self.fetcher.fetch(image_url)
+            if image_content is not None:
+                try:
+                    await self._dump_image(image_content, token_id, content_type)
+                except UnidentifiedImageError as e:
+                    logger.error(
+                        f"Could not dump Image with content-type: {content_type}. Error: {e}"
+                    )
+
+    async def _extract_video_from_metadata(self, meta_data: dict, token_id: str):
+        video_url = meta_data.get("video", meta_data.get("video_url"))
+        if video_url:  # noqa
+            video_content, content_type = await self.fetcher.fetch(video_url)
+            ext = content_type.split("/")[1]
+            if video_content:
+                await self._dump_file(
+                    "video", token_id, video_content, content_type, ext
+                )
+
+    async def _extract_animation_from_metadata(self, meta_data: dict, token_id: str):
+        animation_url = meta_data.get("animation", meta_data.get("animation_url"))
+        if animation_url:
+            animation_content, content_type = await self.fetcher.fetch(
+                animation_url
+            )
+            ext = content_type.split("/")[1]
+            if animation_content:
+                await self._dump_file(
+                    "animation", token_id, animation_content, content_type, ext
+                )
+
     async def _extract_assets(self, token_id, token_uri):
         if token_uri is None:
             logger.info(
@@ -113,50 +147,18 @@ class BaseAssetExtractionEngine(metaclass=ABCMeta):
                     file_type, token_id, token_uri, content, content_type
                 )
 
-            # Search for Other Assets in the MetaData Json and Upload to s3
-            image_url = meta_data.get("image", meta_data.get("image_url"))
-            video_url = meta_data.get("video", meta_data.get("video_url"))
-            file_url = meta_data.get("file", meta_data.get("file_url"))
-            animation_url = meta_data.get("animation", meta_data.get("animation_url"))
-            audio_url = meta_data.get("audio", meta_data.get("audio_url"))
-            thumbnail_url = meta_data.get("thumbnail", meta_data.get("thumbnail_url"))
-            if image_url:
-                image_content, content_type = await self.fetcher.fetch(image_url)
-                if image_content is not None:
-                    try:
-                        await self._dump_image(image_content, token_id, content_type)
-                    except UnidentifiedImageError as e:
-                        logger.error(
-                            f"Could not dump Image with content-type: {content_type}. Error: {e}"
-                        )
-            if video_url:  # noqa
-                video_content, content_type = await self.fetcher.fetch(video_url)
-                ext = content_type.split("/")[1]
-                if video_content:
-                    await self._dump_file(
-                        "video", token_id, video_content, content_type, ext
-                    )
-            if file_url:
-                logger.info(f"Found File URL: {file_url}")
-            if audio_url:
-                logger.info(f"Found Audio URL: {audio_url}")
-            if thumbnail_url:
-                logger.info(f"Found Thumbnail URL: {thumbnail_url}")
-            if animation_url:  # noqa
-                animation_content, content_type = await self.fetcher.fetch(
-                    animation_url
-                )
-                ext = content_type.split("/")[1]
-                if animation_content:
-                    await self._dump_file(
-                        "animation", token_id, animation_content, content_type, ext
-                    )
+            # Extract image, video, and animation url from metadata json
+            await self._extract_image_from_metadata(meta_data, token_id)
+            await self._extract_video_from_metadata(meta_data, token_id)
+            await self._extract_animation_from_metadata(meta_data, token_id)
+
             logger.info(f"Completed dump for Token ID -> {token_id}\n")
         else:
             raise NoMetaDataException(f"Could Not Fetch Metadata for {token_uri}")
 
     @abstractmethod
-    async def _run(self): ...
+    async def _run(self):
+        ...
 
     def run(self):
         asyncio.run(self._run())
@@ -183,50 +185,12 @@ class TextMetadataRerunEngine(BaseAssetExtractionEngine):
         self.paths = paths
 
     async def __extract_metadata_and_assets(self, meta_data, token_id):
-        content_exists = meta_data.get("content")  # noqa
-        if content_exists:
-            content, content_type = await self.fetcher.fetch(
-                content_exists.replace("cid:", "")
-            )
-            file_type = content_type.split("/")[0]
-            if file_type == "image":
-                await self._dump_image(content, token_id, content_type)
-            else:
-                ext = content_type.split("/")[1]
-                await self._dump_file(file_type, token_id, content, content_type, ext)
-        await self._dump_metadata(meta_data, token_id)
+        await self._process_json_metadata(meta_data, token_id)
 
-        # Search for Other Assets in the MetaData Json and Upload to s3
-        image_url = meta_data.get("image", meta_data.get("image_url"))  # noqa
-        video_url = meta_data.get("video", meta_data.get("video_url"))
-        file_url = meta_data.get("file", meta_data.get("file_url"))
-        animation_url = meta_data.get("animation", meta_data.get("animation_url"))
-        audio_url = meta_data.get("audio", meta_data.get("audio_url"))
-        thumbnail_url = meta_data.get("thumbnail", meta_data.get("thumbnail_url"))
-        if image_url:
-            image_content, content_type = await self.fetcher.fetch(image_url)
-            if image_content is not None:
-                await self._dump_image(image_content, token_id, content_type)
-        if video_url:  # noqa
-            video_content, content_type = await self.fetcher.fetch(video_url)
-            if video_content:
-                ext = content_type.split("/")[1]
-                await self._dump_file(
-                    "video", token_id, video_content, content_type, ext
-                )
-        if file_url:  # noqa
-            logger.info(f"Found File URL: {file_url}")
-        if audio_url:
-            logger.info(f"Found Audio URL: {audio_url}")
-        if thumbnail_url:
-            logger.info(f"Found Thumbnail URL: {thumbnail_url}")
-        if animation_url:  # noqa
-            animation_content, content_type = await self.fetcher.fetch(animation_url)
-            ext = content_type.split("/")[1]
-            if animation_content:
-                await self._dump_file(
-                    "animation", token_id, animation_content, content_type, ext
-                )
+        # Extract image, video, and animation from metadata
+        await self._extract_image_from_metadata(meta_data, token_id)
+        await self._extract_video_from_metadata(meta_data, token_id)
+        await self._extract_animation_from_metadata(meta_data, token_id)
 
     async def _extract_metadata_and_assets(self, path):
         try:
