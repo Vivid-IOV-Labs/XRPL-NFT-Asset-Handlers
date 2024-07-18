@@ -1,10 +1,8 @@
 import json
-import mimetypes
 from typing import List
 
 import boto3
 import base64
-from io import BytesIO
 from image_processor import resize_image
 from config import Config
 import psycopg2
