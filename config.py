@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv(".env")
 except ModuleNotFoundError:
     pass
@@ -32,5 +33,5 @@ class Config:
         "https://nftstorage.link/ipfs",
         "https://gateway.pinata.cloud/ipfs",
         "https://cloudflare-ipfs.com/ipfs",
-        "https://dweb.link/ipfs"
+        "https://dweb.link/ipfs",
     ]

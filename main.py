@@ -1,8 +1,13 @@
-import asyncio
 import argparse
 import json
 
-from engine import AssetExtractionEngine, RetryEngine, PublicRetryEngine, TextMetadataRerunEngine, Config
+from engine import (
+    AssetExtractionEngine,
+    RetryEngine,
+    PublicRetryEngine,
+    TextMetadataRerunEngine,
+    Config,
+)
 from utils import fetch_text_objects
 import logging
 
@@ -11,21 +16,30 @@ if __name__ == "__main__":
     # Argument Parsers
     parser = argparse.ArgumentParser(
         prog="peerkat",
-        description='''
+        description="""
             Management Command for XLS20 Asset Fetching and Extraction.
             Samples:
                 python main.py --command=extract --stage=nft-mint
-            '''
+            """,
     )
-    parser.add_argument("--command", required=True, help="Command type to run. Accepts `extract` or `fetch`")
-    parser.add_argument("--stage", help="For asset extraction, we have `nft-mint`, `retry`, `public-retry` and `projects-retry`")
+    parser.add_argument(
+        "--command",
+        required=True,
+        help="Command type to run. Accepts `extract` or `fetch`",
+    )
+    parser.add_argument(
+        "--stage",
+        help="For asset extraction, we have `nft-mint`, `retry`, `public-retry` and `projects-retry`",
+    )
     parser.add_argument("--data_path", help="Path to the json file for input")
     parser.add_argument("--token_id", help="NFT token id")
     args = parser.parse_args()
 
     # Initialize Loggers
     logger = logging.getLogger("app_log")
-    formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")  # noqa
+    formatter = logging.Formatter(
+        "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s"
+    )  # noqa
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
@@ -48,7 +62,7 @@ if __name__ == "__main__":
 
         elif stage == "retry":
             path = args.data_path
-            engine= RetryEngine(path=path)
+            engine = RetryEngine(path=path)
             if "s3" in path:
                 path = path.replace("s3://", "")
                 engine.path = path

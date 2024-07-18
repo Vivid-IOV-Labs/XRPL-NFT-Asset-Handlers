@@ -7,21 +7,23 @@ from image_processor import resize_image
 from config import Config
 import psycopg2
 
-class AssetFetcher:
 
-    ACCESS_CONTROL_ALLOW_HEADERS = "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
+class AssetFetcher:
+    ACCESS_CONTROL_ALLOW_HEADERS = (
+        "Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token"
+    )
     ACCESS_CONTROL_ALLOW_METHODS = "GET, OPTIONS, HEAD"
     ACCESS_CONTROL_ALLOW_CREDENTIALS = True
 
     def __init__(self, event: dict):
         self.event = event
         self.asset_to_content_type_mapping = {
-            'image': 'image/jpeg',
-            'video': 'video/mp4',
-            'audio': None,
-            'animation': None,
-            'thumbnail': 'image/jpeg',
-            'metadata': 'application/json',
+            "image": "image/jpeg",
+            "video": "video/mp4",
+            "audio": None,
+            "animation": None,
+            "thumbnail": "image/jpeg",
+            "metadata": "application/json",
         }
 
     def get_success_response(self, content_type: str, content):
@@ -31,26 +33,34 @@ class AssetFetcher:
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": self.ACCESS_CONTROL_ALLOW_CREDENTIALS,
                 "Access-Control-Allow-Methods": self.ACCESS_CONTROL_ALLOW_METHODS,
-                "Access-Control-Allow-Headers": self.ACCESS_CONTROL_ALLOW_HEADERS
+                "Access-Control-Allow-Headers": self.ACCESS_CONTROL_ALLOW_HEADERS,
             },
             "statusCode": 200,
             "body": base64.b64encode(content).decode("utf-8"),
-            "isBase64Encoded": True
+            "isBase64Encoded": True,
         }
 
     @staticmethod
     def _get_possible_image_keys(token_id: str) -> List[str]:
-        return [f"assets/images/{token_id}/full/image", f"assets/images/{token_id}/full/image.jpeg"]
+        return [
+            f"assets/images/{token_id}/full/image",
+            f"assets/images/{token_id}/full/image.jpeg",
+        ]
 
     @staticmethod
     def _get_possible_thumbnail_keys(token_id: str) -> List[str]:
-        return [f"assets/images/{token_id}/200px/image", f"assets/images/{token_id}/200px/image.jpeg"]
+        return [
+            f"assets/images/{token_id}/200px/image",
+            f"assets/images/{token_id}/200px/image.jpeg",
+        ]
 
     @staticmethod
     def _get_possible_animation_keys(token_id: str) -> List[str]:
         return [
-            f"assets/animations/{token_id}/animation", f"assets/animations/{token_id}/animation.mp4",
-            f"assets/animations/{token_id}/animation.png", f"assets/animations/{token_id}/animation.gif"
+            f"assets/animations/{token_id}/animation",
+            f"assets/animations/{token_id}/animation.mp4",
+            f"assets/animations/{token_id}/animation.png",
+            f"assets/animations/{token_id}/animation.gif",
         ]
 
     @staticmethod
@@ -60,13 +70,17 @@ class AssetFetcher:
     @staticmethod
     def _get_possible_audio_keys(token_id: str) -> List[str]:
         return [
-            f"assets/audio/{token_id}/audio", f"assets/audio/{token_id}/audio.mpeg",
-            f"assets/audio/{token_id}/audio.wav"
+            f"assets/audio/{token_id}/audio",
+            f"assets/audio/{token_id}/audio.mpeg",
+            f"assets/audio/{token_id}/audio.wav",
         ]
 
     @staticmethod
     def _get_possible_metadata_keys(token_id: str) -> List[str]:
-        return [f"assets/metadata/{token_id}/metadata", f"assets/metadata/{token_id}/metadata.json"]
+        return [
+            f"assets/metadata/{token_id}/metadata",
+            f"assets/metadata/{token_id}/metadata.json",
+        ]
 
     def _get_possible_keys_for_asset(self, asset_type: str, token_id: str) -> List[str]:
         if asset_type == "image":
@@ -99,7 +113,6 @@ class AssetFetcher:
         output = output_buffer.getvalue()
         return output
 
-
     def fetch(self, asset_type: str):
         if asset_type not in self.asset_to_content_type_mapping.keys():
             return {"statusCode": 400}
@@ -122,11 +135,15 @@ class AssetFetcher:
         for key in keys:
             try:
                 obj = s3.get_object(Bucket=bucket, Key=key)
-                body = obj['Body']
+                body = obj["Body"]
                 content = body.read()
                 if content_type is None:
-                    content_type = self._get_content_type_from_asset_key(key, asset_type)
-                if asset_type == "image" and (req_height is not None or req_width is not None):
+                    content_type = self._get_content_type_from_asset_key(
+                        key, asset_type
+                    )
+                if asset_type == "image" and (
+                    req_height is not None or req_width is not None
+                ):
                     content = self._resize_image(content, req_height, req_width)
                 return self.get_success_response(content_type, content)
             except Exception as e:
@@ -162,7 +179,7 @@ class AssetFetcher:
             password=Config.RDS_PASSWORD,
             host=Config.DB_HOST,
             port=Config.RDS_PORT,
-            database=Config.DB_NAME
+            database=Config.DB_NAME,
         )
         cursor = connection.cursor()
 
@@ -170,23 +187,22 @@ class AssetFetcher:
         token_ids = cursor.fetchall()
         cursor.execute(count_query)
         total_ids = cursor.fetchall()[0][0]
-        keys = [(token_id[0], f"assets/metadata/{token_id[0]}/metadata") for token_id in token_ids]
+        keys = [
+            (token_id[0], f"assets/metadata/{token_id[0]}/metadata")
+            for token_id in token_ids
+        ]
         metadatas = []
 
-        for (token_id, key) in keys:
+        for token_id, key in keys:
             try:
                 obj = s3.get_object(Bucket=bucket, Key=key)
-                body = obj['Body']
+                body = obj["Body"]
                 content = body.read()
                 to_dict = json.loads(content)
                 metadatas.append({"token_id": token_id, "metadata": to_dict})
             except Exception as e:
                 print(f"Error Fetching Metadata for TokenID: {token_id}\n{e}")
-        results = {
-            "data": metadatas,
-            "count": total_ids,
-            "current_page": page_num
-        }
+        results = {"data": metadatas, "count": total_ids, "current_page": page_num}
         content = bytes(json.dumps(results), "utf-8")
         content_type = "application/json"
         return self.get_success_response(content_type, content)

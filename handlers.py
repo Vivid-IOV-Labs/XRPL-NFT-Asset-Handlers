@@ -11,7 +11,9 @@ from asset_fetcher import AssetFetcher
 
 logger = logging.getLogger("app_log")
 
-formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")  # noqa
+formatter = logging.Formatter(
+    "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s"
+)  # noqa
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
@@ -27,20 +29,22 @@ class EventName(Enum):
 
 
 def mixpanel_tracking(event: EventName, ip_address: str, token_id: str):
-    payload = [{
-        "event": event.value,
-        "properties": {
-            "time": int(time.time()),
-            "ip_address": ip_address,
-            "token_id": token_id,
-            "token": Config.MIXPANEL_PROJECT_TOKEN
+    payload = [
+        {
+            "event": event.value,
+            "properties": {
+                "time": int(time.time()),
+                "ip_address": ip_address,
+                "token_id": token_id,
+                "token": Config.MIXPANEL_PROJECT_TOKEN,
+            },
         }
-    }]
+    ]
     requests.post(
         "https://api.mixpanel.com/track",
         params={"strict": "1"},
         headers={"Content-Type": "application/json"},
-        data=json.dumps(payload)
+        data=json.dumps(payload),
     )
 
 
@@ -51,28 +55,31 @@ def nft_data_handler(event, _context):
 
 
 def fetch_images_handler(event, _context):
-    token_id = event['pathParameters']['token_id']
+    token_id = event["pathParameters"]["token_id"]
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="image")
     mixpanel_tracking(EventName.IMAGES, "", token_id)
     return result
 
+
 def fetch_thumbnail_handler(event, _context):
-    token_id = event['pathParameters']['token_id']
+    token_id = event["pathParameters"]["token_id"]
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="thumbnail")
     mixpanel_tracking(EventName.THUMBNAILS, "", token_id)
     return result
 
+
 def fetch_animation_handler(event, _context):
-    token_id = event['pathParameters']['token_id']
+    token_id = event["pathParameters"]["token_id"]
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="animation")
     mixpanel_tracking(EventName.ANIMATIONS, "", token_id)
     return result
 
+
 def fetch_metadata_handler(event, _context):
-    token_id = event['pathParameters']['token_id']
+    token_id = event["pathParameters"]["token_id"]
     fetcher = AssetFetcher(event)
     result = fetcher.fetch(asset_type="metadata")
     mixpanel_tracking(EventName.METADATA, "", token_id)
@@ -84,9 +91,11 @@ def fetch_audio_handler(event, _context):
     result = fetcher.fetch(asset_type="audio")
     return result
 
+
 def fetch_video_handler(event, _context):
     fetcher = AssetFetcher(event)
     return fetcher.fetch(asset_type="video")
+
 
 def fetch_project_metadata(event, _context):
     fetcher = AssetFetcher(event)
@@ -94,13 +103,17 @@ def fetch_project_metadata(event, _context):
     mixpanel_tracking(EventName.COLLECTIONS, "", "")
     return result
 
+
 def retry(event, _context):
     path = event["Records"][0]["s3"]["object"]["key"]
     engine = RetryEngine(path=path)
     engine.run()
 
+
 def public_retry_api(event, _context):
-    payload = bytes(json.dumps({"token_id": event["pathParameters"].get("token_id", None)}), "utf-8")
+    payload = bytes(
+        json.dumps({"token_id": event["pathParameters"].get("token_id", None)}), "utf-8"
+    )
     lambda_client = boto3.client(
         "lambda",
         region_name="eu-west-2",
@@ -108,15 +121,10 @@ def public_retry_api(event, _context):
         aws_secret_access_key=Config.SECRET_ACCESS_KEY,
     )
     resp = lambda_client.invoke(
-        FunctionName="retry",
-        InvocationType="Event",
-        Payload=payload
+        FunctionName="retry", InvocationType="Event", Payload=payload
     )
     logger.info(resp)
-    return {
-        "statusCode": 200,
-        "body": '{"message": "Token ID Submitted for retry"}'
-    }
+    return {"statusCode": 200, "body": '{"message": "Token ID Submitted for retry"}'}
 
 
 def public_retry(event, _content):

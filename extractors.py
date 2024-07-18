@@ -1,18 +1,24 @@
 from typing import List, Dict, Optional
 import logging
-from utils import hex_to_text, is_ipfs, is_normal_url, fetch_account_info, fetch_account_info_async
+from utils import (
+    hex_to_text,
+    is_ipfs,
+    is_normal_url,
+    fetch_account_info,
+    fetch_account_info_async,
+)
 from abc import ABCMeta, abstractmethod
 
 
 logger = logging.getLogger("app_log")
 
-class InvalidTxnResultException(Exception):
-    ...
+
+class InvalidTxnResultException(Exception): ...
+
 
 class BaseExtractor(metaclass=ABCMeta):
     @abstractmethod
-    def extract(self):
-        ...
+    def extract(self): ...
 
 
 class TokenIDExtractor(BaseExtractor):
@@ -24,14 +30,26 @@ class TokenIDExtractor(BaseExtractor):
         return self._data["meta"]["AffectedNodes"]
 
     def _get_token_page_modified_nodes(self) -> List[Dict]:
-        modified_nodes = [node for node in self._affected_nodes if node.get("ModifiedNode", False)]
+        modified_nodes = [
+            node for node in self._affected_nodes if node.get("ModifiedNode", False)
+        ]
         if modified_nodes:
-            return [node for node in modified_nodes if node["ModifiedNode"]["LedgerEntryType"] == "NFTokenPage"]
+            return [
+                node
+                for node in modified_nodes
+                if node["ModifiedNode"]["LedgerEntryType"] == "NFTokenPage"
+            ]
         return []
 
     def _get_token_page_created_nodes(self) -> List[Dict]:
-        created_nodes = [node for node in self._affected_nodes if node.get("CreatedNode", False)]
-        return [node for node in created_nodes if node["CreatedNode"]["LedgerEntryType"] == "NFTokenPage"]
+        created_nodes = [
+            node for node in self._affected_nodes if node.get("CreatedNode", False)
+        ]
+        return [
+            node
+            for node in created_nodes
+            if node["CreatedNode"]["LedgerEntryType"] == "NFTokenPage"
+        ]
 
     def _get_nft_tokens_from_modified_nodes(self) -> List[Dict]:
         modified_nodes = self._get_token_page_modified_nodes()
@@ -66,7 +84,9 @@ class TokenIDExtractor(BaseExtractor):
                     hash_map[token_hash] = {"count": 1, "token": token}
                 else:
                     hash_map[token_hash]["count"] += 1
-            target_tokens = [item["token"] for item in hash_map.values() if item["count"] == 1]
+            target_tokens = [
+                item["token"] for item in hash_map.values() if item["count"] == 1
+            ]
             if len(target_tokens) > 1:
                 logger.info("Multiple NFTokens Returned")
                 return None
@@ -74,6 +94,7 @@ class TokenIDExtractor(BaseExtractor):
         except Exception as e:
             logger.error(f"Error getting nft-token-id: {e}")
         return None
+
 
 class TokenURIExtractor(BaseExtractor):
     def __init__(self, data: Dict):
@@ -87,6 +108,7 @@ class TokenURIExtractor(BaseExtractor):
                 token_uri = token_uri.replace("cid:", "")
             return f"ipfs://{token_uri}"
         return token_uri
+
 
 class DomainURIExtractor:
     @staticmethod

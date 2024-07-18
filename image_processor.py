@@ -15,7 +15,9 @@ def process_image(content: bytes):
     return img, new_image
 
 
-def resize_image(content: bytes, req_height: Optional[str], req_width: Optional[str]) -> BytesIO:
+def resize_image(
+    content: bytes, req_height: Optional[str], req_width: Optional[str]
+) -> BytesIO:
     img = Image.open(BytesIO(content))  # noqa
     width, height = img.size
     aspect_ratio = width / height
